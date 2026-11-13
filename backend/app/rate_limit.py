@@ -2,6 +2,9 @@
 server or guess Connect AI codes. The app has no login, so this is what
 keeps one visitor from spoiling it for the others.
 
+With API keys on (app/api_keys.py) a request counts for its key, so each
+key gets these limits; the endpoints that need no key count per address.
+
 Behind Caddy the visitor's address comes from X-Forwarded-For (uvicorn
 --proxy-headers; the backend port is not published). The MCP server's own
 calls into the backend carry INTERNAL_TOKEN and do not count: the agent's
@@ -26,6 +29,9 @@ INTERNAL_HEADER = b"x-heattransplan-internal"
 # (path prefix, requests, seconds): the first prefix that matches counts.
 RULES = [
     ("/mcp", 120, 60),
+    # Free keys: a few an hour per address; page tokens last a day each.
+    ("/api/keys/page", 30, 3600),
+    ("/api/keys", 5, 3600),
     ("/api/analysis/report", 20, 60),
     ("/api/analysis/cop-model/train", 10, 60),
     ("/api/geo/search", 30, 60),  # OpenStreetMap's search allows about one a second
@@ -66,6 +72,8 @@ class RateLimit:
         if dict(scope["headers"]).get(INTERNAL_HEADER) == INTERNAL_TOKEN.encode():
             return await self.app(scope, receive, send)
         ip = (scope.get("client") or ("unknown",))[0]
+        # The key's id when app/api_keys.py checked one, else the address.
+        who = scope.get("heattransplan.client") or ip
         path = scope["path"]
         now = time.monotonic()
         self._forget_idle(now)
@@ -76,11 +84,11 @@ class RateLimit:
             wait = self._full(("miss", ip), *self.misses, now)
         rule = next((r for r in self.rules if path.startswith(r[0])), None)
         if not wait and rule:
-            wait = self._full((rule[0], ip), rule[1], rule[2], now)
+            wait = self._full((rule[0], who), rule[1], rule[2], now)
         if wait:
             return await _too_many(send, wait)
         if rule:
-            self.hits[(rule[0], ip)].append(now)
+            self.hits[(rule[0], who)].append(now)
 
         async def watch(message):
             if live and message["type"] == "http.response.start" and message["status"] == 404:

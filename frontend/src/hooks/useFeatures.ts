@@ -10,9 +10,11 @@ export interface Features {
   ai: boolean;
   /** The server wants an API key. */
   api_key: boolean;
+  /** Anybody can get a key here (POST /api/keys). */
+  user_keys: boolean;
 }
 
-const OFF: Features = { cop_training: false, ai: false, api_key: false };
+const OFF: Features = { cop_training: false, ai: false, api_key: false, user_keys: false };
 let pending: Promise<Features> | null = null;
 
 export function useFeatures(): Features {

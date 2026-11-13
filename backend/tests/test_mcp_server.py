@@ -396,7 +396,7 @@ def test_served_online_at_mcp(monkeypatch):
     """The backend's /mcp: an agent connects with the URL alone. Files come in
     as content and go out as links; the server's own disk stays out of reach."""
     from fastapi.testclient import TestClient
-    from app import dependencies, mcp_http
+    from app import api_keys
 
     page = {"state": copy.deepcopy(EMPTY), "steps": []}
 
@@ -405,8 +405,7 @@ def test_served_online_at_mcp(monkeypatch):
 
     monkeypatch.setattr(S, "_live", the_page)
 
-    monkeypatch.setattr(dependencies, "API_KEYS", ["k1"])
-    monkeypatch.setattr(mcp_http, "API_KEYS", ["k1"])
+    monkeypatch.setattr(api_keys, "API_KEYS", ["k1"])
     headers = {"Accept": "application/json, text/event-stream", "Authorization": "Bearer k1"}
 
     def call(c, name, args):
@@ -416,7 +415,7 @@ def test_served_online_at_mcp(monkeypatch):
         return out.get("isError"), out["content"][0]["text"]
 
     with TestClient(app) as c:
-        assert c.post("/mcp", json={}).status_code == 401  # no key
+        assert c.post("/mcp", json={}).status_code == 403  # no key
         r = c.post("/mcp", headers=headers, json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
         names = {t["name"] for t in r.json()["result"]["tools"]}
         assert "analyse_project" in names

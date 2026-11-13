@@ -7,7 +7,7 @@
  *  applying an edit, ...) and answers each one. */
 
 import { create } from 'zustand';
-import client, { API_BASE, API_KEY } from '../api/client';
+import client, { API_BASE, authHeaders } from '../api/client';
 import { runCommand } from './commands';
 
 type Status = 'off' | 'connecting' | 'on' | 'error';
@@ -102,12 +102,15 @@ function handleEvent(sessionId: string, type: string, data: Record<string, unkno
 /** Reads the event stream; reconnects after a drop until switched off. */
 async function listen(sessionId: string, signal: AbortSignal) {
   let wait = 1000;
+  let refused = false;
   while (!signal.aborted) {
     try {
       const res = await fetch(`${API_BASE}/api/live/sessions/${sessionId}/events`, {
-        headers: API_KEY ? { 'X-API-Key': API_KEY } : {},
+        // After a refusal (token ran out), a fresh page token.
+        headers: await authHeaders(refused),
         signal,
       });
+      refused = res.status === 401 || res.status === 403;
       if (res.status === 404) throw new Error('The live session has ended.');
       if (!res.ok || !res.body) throw new Error(`Live connection failed (${res.status}).`);
       wait = 1000;

@@ -1073,7 +1073,15 @@
     "setup_ex_claude_code": "Claude Code, im Terminal (alle Werkzeuge erlauben: /permissions, mcp__heattransplan erlauben):",
     "setup_ex_gemini": "Gemini CLI, im Terminal, oder den Eintrag unten in ~/.gemini/settings.json einfügen; danach zeigt /mcp die Werkzeuge. (Die Gemini-Web-App nimmt keine eigenen MCP-Server.)",
     "setup_ex_note": "Die Menünamen ändern sich mit Versionen und Tarifen; nach MCP, Connectors, Apps oder Werkzeugen suchen.",
-    "undo": "Letzten Schritt der KI rückgängig machen: {{step}}"
+    "undo": "Letzten Schritt der KI rückgängig machen: {{step}}",
+    "key_title": "Dein API-Schlüssel.",
+    "key_why": "Dieser Server verlangt von jedem Agenten einen Schlüssel. Er ist kostenlos und sofort da: keine E-Mail, kein Konto.",
+    "key_get": "Schlüssel holen",
+    "key_keep": "Bewahre ihn auf; er wird nur einmal angezeigt und lässt sich nicht wiederherstellen. Dieser Browser merkt ihn sich, der Server nicht.",
+    "key_in_url": "Die Adresse enthält deinen Schlüssel (…?key=), für Connectors, die keine Header senden können, etwa Claude und ChatGPT. Agenten, die Header senden können, nehmen die Adresse ohne ihn und senden stattdessen Authorization: Bearer <Schlüssel> (siehe Beispiele).",
+    "key_too_many": "Zu viele Schlüssel von dieser Adresse; versuche es in einer Stunde wieder.",
+    "key_failed": "Kein Schlüssel erhalten; versuche es noch einmal.",
+    "setup_ex_cursor": "Cursor und andere Agenten mit JSON-Konfiguration (mcp.json), der Schlüssel als Header:"
   },
   "home_preview": {
     "lead": "HeatTransPlan unterstützt Industrieunternehmen auf dem Weg zur klimaneutralen Prozesswärme. Das Tool erfasst Prozessenergiedaten strukturiert und nutzt sie für eine erste Energiepotenzialanalyse: das Wärmerückgewinnungspotenzial, den minimalen Energiebedarf und mögliche Wärmepumpenintegrationen mit ihrer Leistungszahl (COP) und Wirtschaftlichkeit.",
