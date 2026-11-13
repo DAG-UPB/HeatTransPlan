@@ -99,11 +99,12 @@ sequenceDiagram
 
 ## Security layers
 
-There is no login: the app is public, so each layer has to hold on its own.
+There is no login: the app is public, so each layer has to hold on its own. API keys (below) are free for anybody and do not change that; they make limits and blocking work per key.
 
 | Layer | Protects against | Where |
 |---|---|---|
-| **Requests per visitor** | One visitor flooding the server; guessing Connect AI codes (after 30 wrong codes in 10 minutes the live endpoints refuse that visitor for a while). Limits per minute: agents 120, reports 20, COP training 10, address search 30, everything else 1200. | `backend/app/rate_limit.py` |
+| **API keys** | Anonymous scripts and agents with no limit of their own, and one misused key spoiling it for everyone. With `API_KEY_SECRET` set, every `/api` route and `/mcp` wants a key; anybody gets one at once (`POST /api/keys`, 5 an hour per address), the page a 24-hour token of its own. Keys are signed (HMAC-SHA256), so the server stores none and no record of who got one. Blocking one key: its id in `API_KEY_BLOCKLIST`. All of them: a new `API_KEY_SECRET`. | `backend/app/api_keys.py` |
+| **Requests per key** | One client flooding the server; guessing Connect AI codes (after 30 wrong codes in 10 minutes the live endpoints refuse that address for a while). Counted per key, per address where no key is needed. Limits per minute: agents 120, reports 20, COP training 10, address search 30, everything else 1200. | `backend/app/rate_limit.py` |
 | **Upload size** | Requests over 50 MB. | `Caddyfile` |
 | **Browser protections** | Framing by other sites, plugins, form tricks; HTTPS only, once on a domain. No script policy on purpose: maps, charts and docs load from several sites. | `Caddyfile` |
 | **Text, never markup** | A name or note like `<script>` running when someone opens a report. | `backend/app/services/report/` |
@@ -151,7 +152,9 @@ The same repository runs on a laptop and on a server; what differs is in a `.env
 | `SITE_ADDRESS` | `:80` (any address, plain http) | The server's domain; Caddy then gets its HTTPS certificate |
 | `AI_ENABLED` | `1` | `0` switches AI access off |
 | `RATE_LIMIT` | `1` | `0` switches the limits off |
-| `API_KEYS` | – | Keys every API request (and agent) must send; unset: open |
+| `API_KEY_SECRET` | – | Signs the free API keys (at least 32 random bytes: `openssl rand -base64 48`); set: every API request and agent needs a key. Changing it invalidates every key. Unset: no keys |
+| `API_KEY_BLOCKLIST` | – | Key ids switched off, comma separated (the part between `htp_` or `htp_page_` and the first dot); applies on restart |
+| `API_KEYS` | – | Operator keys, accepted as they are; set alone, they switch checking on too |
 | `COP_TRAINING_ENABLED` | `1` | `0` switches the COP training module off |
 
 Start, or update after a change: `docker compose up -d --build`.

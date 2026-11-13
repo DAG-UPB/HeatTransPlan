@@ -2,15 +2,16 @@ import logging
 import re
 import time
 
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, HTTPException, Request, Security
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import AI_ENABLED, CORS_ORIGINS
 from app.routers import processes, analysis, io_routes, assets, live
 from app.services import activity_log, cop_training
-from app.dependencies import API_KEYS, verify_api_key
+from app import api_keys
 from app.rate_limit import RateLimit
+from fastapi.security import APIKeyHeader
 
 # The MCP server online, when AI access is on and its package is installed
 # (see app/mcp_http.py).
@@ -35,9 +36,9 @@ app = FastAPI(
 
 # What the log leaves out: reads, the page reporting its view, the AI's page
 # commands and their answers, and its activity notes (live.record writes one
-# row per tool instead), and /mcp (each tool's calls to the API are logged as
-# the AI's).
-_QUIET = re.compile(r"^/api/live/(sessions/[^/]+/(view|commands(/.*)?)|pages/[^/]+/log)$|^/mcp")
+# row per tool instead), /mcp (each tool's calls to the API are logged as
+# the AI's), and getting an API key: issuing one leaves no trace at all.
+_QUIET = re.compile(r"^/api/live/(sessions/[^/]+/(view|commands(/.*)?)|pages/[^/]+/log)$|^/mcp|^/api/keys(/page)?$")
 
 
 @app.middleware("http")
@@ -71,6 +72,9 @@ async def activity(request: Request, call_next):
 
 # Requests per visitor (app/rate_limit.py); added first so CORS wraps its answers.
 app.add_middleware(RateLimit)
+# The key check (app/api_keys.py) for every /api route and /mcp, before the
+# rate limit, which then counts per key.
+app.add_middleware(api_keys.ApiKeyCheck)
 
 # CORS
 app.add_middleware(
@@ -81,8 +85,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register routers with API Key verification
-api_dependencies = [Depends(verify_api_key)]
+# ApiKeyCheck above does the checking for every route; this only shows the
+# key (an Authorize button) in the API's own documentation at /api/docs.
+api_dependencies = [Security(APIKeyHeader(name="X-API-Key", auto_error=False))]
 
 app.include_router(processes.router, prefix="/api", tags=["Processes"], dependencies=api_dependencies)
 app.include_router(analysis.router, prefix="/api/analysis", tags=["Analysis"], dependencies=api_dependencies)
@@ -102,11 +107,30 @@ if cop_training.ENABLED:
 async def features():
     """Which optional modules this server runs, so the page shows only those."""
     return {"cop_training": cop_training.ENABLED, "ai": AI_ENABLED, "mcp": mcp_http is not None,
-            "api_key": bool(API_KEYS)}
+            "api_key": api_keys.required(), "user_keys": bool(api_keys.SECRET)}
+
+
+@app.post("/api/keys", tags=["API keys"])
+async def new_key():
+    """A new API key for scripts and AI agents, at once and for anybody. It is
+    signed, not stored: the server keeps nothing, so it cannot be shown again."""
+    if not api_keys.SECRET:
+        raise HTTPException(404, "This server does not issue API keys.")
+    return {"key": api_keys.issue_user_key()}
+
+
+@app.post("/api/keys/page", tags=["API keys"])
+async def new_page_token():
+    """A token for the web page's own requests, valid about a day. key is
+    null when this server does not check keys."""
+    if not api_keys.SECRET:
+        return {"key": None, "expires_at": None}
+    key, exp = api_keys.issue_page_token()
+    return {"key": key, "expires_at": exp}
 
 
 if mcp_http:
-    # Its own key check (Bearer too, as agents send it); before the page's catch-all below.
+    # Keys checked by ApiKeyCheck (header or ?key=); before the page's catch-all below.
     app.add_route("/mcp", mcp_http.endpoint, methods=["GET", "POST", "DELETE"])
     app.include_router(mcp_http.router, prefix="/api/mcp", tags=["MCP"])
 
@@ -118,7 +142,6 @@ async def health():
 # Serve frontend static files
 import os
 from fastapi.staticfiles import StaticFiles
-from fastapi import HTTPException
 from fastapi.responses import FileResponse
 
 frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend", "dist")

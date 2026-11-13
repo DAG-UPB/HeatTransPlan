@@ -3,13 +3,12 @@ or any other) connects with the app's address alone, nothing installed.
 
 The tools call this backend in-process. Online they never touch the server's
 disk for a caller: files come in as content and results go out as download
-links (/api/mcp/files/...). With API_KEYS set, /mcp wants one of them as
-X-API-Key or "Authorization: Bearer <key>"."""
+links (/api/mcp/files/...). With API keys on, app/api_keys.py checks the
+key in front of /mcp (header or ?key=) before this app sees the request."""
 
 from __future__ import annotations
 
 import contextlib
-import json
 import logging
 
 import httpx
@@ -19,7 +18,6 @@ from heattransplan_mcp import files, server
 from heattransplan_mcp.api import Api
 from mcp.server.transport_security import TransportSecuritySettings
 
-from app.dependencies import API_KEYS
 from app.rate_limit import INTERNAL_TOKEN
 
 router = APIRouter()
@@ -43,21 +41,12 @@ def _base_url(headers: dict) -> str:
 
 
 class McpEndpoint:
-    """ASGI app at /mcp: checks the key, notes the public address, hands over."""
+    """ASGI app at /mcp: notes the public address, hands over."""
 
     handler = None
 
     async def __call__(self, scope, receive, send):
         headers = dict(scope["headers"])
-        if API_KEYS:
-            key = headers.get(b"x-api-key", b"").decode()
-            bearer = headers.get(b"authorization", b"").decode()
-            if bearer.lower().startswith("bearer "):
-                key = key or bearer[7:].strip()
-            if key not in API_KEYS:
-                await Response(json.dumps({"detail": "Missing or invalid API key"}), 401,
-                               media_type="application/json")(scope, receive, send)
-                return
         if self.handler is None:
             await Response("MCP is starting", 503)(scope, receive, send)
             return
@@ -74,10 +63,9 @@ endpoint = McpEndpoint()
 @contextlib.asynccontextmanager
 async def lifespan(app):
     """Run the MCP session manager and point the tools at this app."""
-    # The agent's request to /mcp is what the rate limit counts, not these.
+    # The agent's request to /mcp is what the rate limit counts, not these;
+    # its key was checked there, so these pass the key check too.
     headers = {"X-HeatTransPlan-Internal": INTERNAL_TOKEN, "X-Actor": "ai"}
-    if API_KEYS:
-        headers["X-API-Key"] = API_KEYS[0]
     client = httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://backend", timeout=330,
         headers=headers)

@@ -1073,7 +1073,15 @@
     "setup_ex_claude_code": "Claude Code, in a terminal (to allow all tools: /permissions, allow mcp__heattransplan):",
     "setup_ex_gemini": "Gemini CLI, in a terminal, or add the entry below to ~/.gemini/settings.json; then /mcp lists the tools. (The Gemini web app does not take custom MCP servers.)",
     "setup_ex_note": "Menu names change between versions and plans; look for MCP, connectors, apps or tools.",
-    "undo": "Undo the AI's last step: {{step}}"
+    "undo": "Undo the AI's last step: {{step}}",
+    "key_title": "Your API key.",
+    "key_why": "This server wants a key from every agent. It is free and issued at once: no email, no account.",
+    "key_get": "Get a key",
+    "key_keep": "Keep it; it is shown only once and cannot be recovered. This browser remembers it, the server does not.",
+    "key_in_url": "The address carries your key (…?key=), for connectors that cannot send headers, such as Claude and ChatGPT. Agents that can send headers can use the address without it and send Authorization: Bearer <key> instead (see the examples).",
+    "key_too_many": "Too many keys from this address; try again in an hour.",
+    "key_failed": "Could not get a key; try again.",
+    "setup_ex_cursor": "Cursor and other agents with a JSON config (mcp.json), the key as a header:"
   },
   "home_preview": {
     "lead": "HeatTransPlan supports industrial companies on the way to climate-neutral process heat. The tool records process energy data in a structured way and uses it for a first energy potential analysis: the heat recovery potential, the minimum energy demand, and possible heat pump integrations with their COP and economics.",

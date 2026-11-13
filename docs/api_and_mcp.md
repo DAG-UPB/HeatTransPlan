@@ -11,7 +11,14 @@ The backend is a FastAPI application. Its interactive reference, with every endp
 - locally: <http://localhost:8000/api/docs>
 - machine-readable: `/api/openapi.json`
 
-**Authentication.** When the server sets `API_KEYS` (comma separated), every request needs the header `X-API-Key: <key>`. Without `API_KEYS` the API is open, which is the default for local use.
+**Authentication: API keys.** When the server sets `API_KEY_SECRET`, every request to `/api/*` and `/mcp` needs a key, sent as the header `X-API-Key: <key>` or `Authorization: Bearer <key>`; without one the answer is `403`. Anybody gets a key at once, with no email and no account: on the page (Connect AI → **?** → **Get a key**) or with `POST /api/keys`, which answers `{"key": "htp_…"}`. Keep it: it is shown only once. User keys do not expire.
+
+The server stores nothing about keys: a key is signed with `API_KEY_SECRET` (HMAC-SHA256), so checking it needs no list of keys and no record of who got one. Keys are not there to keep anyone out; they give each key its own limits (instead of each address) and let the operator switch off one misused key without touching the others.
+
+- The web page gets its own token by itself (`POST /api/keys/page`, valid about 24 hours) and renews it; a visitor never sees or pastes a key.
+- Getting keys is limited per address: 5 user keys and 30 page tokens an hour.
+- Open without a key: `GET /api/health`, `GET /api/features`, `POST /api/keys`, `POST /api/keys/page`, the one-time download links `/api/mcp/files/…`, and this reference (`/api/docs`, `/api/openapi.json`).
+- Operator keys in `API_KEYS` (comma separated) are accepted as they are. Without `API_KEY_SECRET` and `API_KEYS` the API is open, which is the default for local use.
 
 ### Endpoints
 
@@ -125,7 +132,9 @@ The analyses rerun by themselves after most changes; `wait_idle` returns the vie
 
 ### Setup
 
-Add a remote MCP server of type HTTP ("streamable HTTP") with the address `<the app>/mcp`. Nothing to install, no command to run. The app's **?** next to Connect AI shows the address and these steps:
+Add a remote MCP server of type HTTP ("streamable HTTP") with the address `<the app>/mcp`. Nothing to install, no command to run. The app's **?** next to Connect AI shows the address and these steps.
+
+Where the server wants a key (see [Authentication](#the-http-api)), get one first in that dialog (**Get a key**); it then fills the key into the address and the commands below. Connectors on the web (Claude, ChatGPT, Le Chat) cannot send headers, so they take the key in the address: `<the app>/mcp?key=htp_…`. Agents that send headers use the plain address with `Authorization: Bearer htp_…`, e.g. `claude mcp add --transport http heattransplan <the app>/mcp --header "Authorization: Bearer htp_…"`; in a JSON config (Cursor, Gemini CLI) add `"headers": {"Authorization": "Bearer htp_…"}` next to the address. The key in the address is taken out before the MCP server sees the request and is never logged.
 
 - **Claude (web, desktop, mobile):** Settings → Connectors → Add custom connector, then the address; switch it on in a chat with **+** → Connectors.
 - **ChatGPT:** Settings → Apps (formerly Connectors) → Advanced settings → Developer mode on → Create, then a name and the address. Only on some plans.
@@ -137,7 +146,7 @@ Add a remote MCP server of type HTTP ("streamable HTTP") with the address `<the 
 Claude, ChatGPT and Le Chat connect from the internet, so they need the app at a public `https://` address; Claude Code and Gemini CLI run on your computer and also reach `http://localhost/mcp`. Menu names change between versions and plans.
 - **Permissions:** agents may ask before every tool. Claude Code allows them all with `/permissions` → allow `mcp__heattransplan`; other agents have a per-server setting.
 
-If the backend sets `API_KEYS`, the agent sends one as `X-API-Key` or `Authorization: Bearer <key>`. `AI_ENABLED=0` (in `.env`) switches all of this off and hides Connect AI; the rest of the app stays as it is. Reports made by an AI say so on their first page.
+If the backend wants a key, the agent sends it as `X-API-Key`, `Authorization: Bearer <key>` or `?key=<key>` in the address. `AI_ENABLED=0` (in `.env`) switches all of this off and hides Connect AI; the rest of the app stays as it is. Reports made by an AI say so on their first page.
 
 Online the server never opens files on its own disk for a caller: files come in as their content (base64, or text for CSV and JSON), and what the tools write (report, project, CSV) comes back as a download link that works once and for 10 minutes: the file leaves the server's memory when it is downloaded. Sessions and projects are not listed: the Connect AI code is what gives access to a page, and only while it is open.
 
@@ -146,7 +155,7 @@ Online the server never opens files on its own disk for a caller: files come in 
 | Variable | Default | |
 |---|---|---|
 | `HEATTRANSPLAN_URL` | `http://localhost:8000` | the backend |
-| `HEATTRANSPLAN_API_KEY` | – | only if the backend sets `API_KEYS` |
+| `HEATTRANSPLAN_API_KEY` | – | only if the backend wants a key (`API_KEY_SECRET` or `API_KEYS`): a key from `POST /api/keys` |
 
 ### Only on the open page, and under the user's control
 
@@ -158,7 +167,7 @@ The assistant works only on a page you have open: click **Connect AI** and give 
 
 ### Security
 
-No login, limits per visitor, browser protections, projects that leave the server, hardened containers: see [Architecture & Security](architecture_and_security.md).
+No login, free API keys with limits per key, browser protections, projects that leave the server, hardened containers: see [Architecture & Security](architecture_and_security.md).
 
 ### Tools
 

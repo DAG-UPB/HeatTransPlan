@@ -304,6 +304,17 @@
 .live-setup li {
   margin-bottom: 0.8rem;
 }
+/* The API key step: its button, or the key with a copy button. */
+.live-setup-key {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.live-setup-key .live-setup-cmd {
+  align-self: stretch;
+}
+
 .live-setup-cmd {
   display: flex;
   align-items: flex-start;

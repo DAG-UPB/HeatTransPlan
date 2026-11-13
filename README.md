@@ -103,7 +103,9 @@ ports `80` and `443`. `.env` stays out of git.
 | `CORS_ORIGINS` | `http://localhost:3000,http://localhost:5173,...` | Comma-separated list of allowed CORS origins |
 | `HOST` | `0.0.0.0` | Bind host |
 | `PORT` | `8000` | Bind port |
-| `API_KEYS` | *(empty — auth disabled)* | Comma-separated API keys for `X-API-Key` header auth |
+| `API_KEY_SECRET` | *(empty — keys off)* | Signs the free API keys; set, every `/api` and `/mcp` request needs one (`X-API-Key`, `Authorization: Bearer`, or `?key=` on `/mcp`). Get one with `POST /api/keys`. Nothing is stored. Changing it invalidates all keys |
+| `API_KEY_BLOCKLIST` | *(empty)* | Comma-separated key ids to refuse (applies on restart) |
+| `API_KEYS` | *(empty)* | Comma-separated operator keys, accepted as they are |
 | `AI_ENABLED` | `1` | `0` switches AI access off: the Connect AI button, the live endpoints and the MCP server at `/mcp`. The rest of the app is unchanged |
 | `RATE_LIMIT` | `1` | `0` switches off the requests-per-visitor limits (`backend/app/rate_limit.py`) |
 | `COP_TRAINING_ENABLED` | `1` | `0` switches the COP training module off: its endpoints, its button on the page, and trained models in the optimization |
@@ -113,6 +115,7 @@ ports `80` and `443`. `.env` stays out of git.
 | Variable | Default | Description |
 |---|---|---|
 | `VITE_API_BASE` | *(empty — same origin)* | Override API base URL (e.g. `http://localhost:8000`) |
+| `VITE_API_KEY` | *(empty)* | Development only: a fixed key instead of the page token (anything in the bundle is public) |
 
 ---
 
