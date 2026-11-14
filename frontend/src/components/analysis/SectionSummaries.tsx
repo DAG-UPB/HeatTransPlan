@@ -4,7 +4,7 @@
 import { useTranslation } from 'react-i18next';
 import { useAnalysisStore } from '../../store/analysisStore';
 import { formatDe } from '../../utils/numberFormat';
-import { gccPockets } from './gccPockets';
+import { atRecoveryShare } from './recoveryShare';
 import { summaryPoints } from './summaryPoints';
 
 function SummaryBox({ title, sentences }: { title: string; sentences: string[] }) {
@@ -27,17 +27,13 @@ export function PinchSummary() {
   const recoveryPct = useAnalysisStore((s) => s.recoveryPct);
   if (!pinch) return null;
 
-  // Heat recovered between streams = hot-stream duty minus what is left to cooling.
-  const hotDuty = pinch.streams_data
-    .filter((s) => s.ts > s.tt)
-    .reduce((sum, s) => sum + Math.abs(s.cp * (s.tt - s.ts)), 0);
-  const recovery = hotDuty - pinch.cold_utility;
+  // The backend's figures: what the hot streams give off, the maximum
+  // recovery, the GCC pockets; and the same at the share chosen.
+  const hotDuty = pinch.total_hot_duty;
+  const recovery = pinch.max_heat_recovery;
   const T = formatDe(pinch.pinch_temperature, 1);
-  const pockets = gccPockets(
-    pinch.grand_composite_curve.H,
-    pinch.grand_composite_curve.T,
-    pinch.pinch_temperature
-  ).heat;
+  const pockets = pinch.gcc_pockets.heat;
+  const share = atRecoveryShare(pinch, recoveryPct);
 
   return (
     <SummaryBox
@@ -51,7 +47,7 @@ export function PinchSummary() {
         }),
         t('summaries.pinch.recovery', {
           hot: formatDe(hotDuty),
-          rec: formatDe(Math.max(recovery, 0)),
+          rec: formatDe(recovery),
         }),
         // Each number with the place it shows in the charts above.
         t('summaries.pinch.utilities', {
@@ -70,13 +66,12 @@ export function PinchSummary() {
           : '',
         // Less than the full recovery chosen: what the cards and charts show then.
         recoveryPct < 100
-          ? ((dd) =>
-              t('summaries.pinch.partial', {
-                p: recoveryPct,
-                rec: formatDe(Math.max(recovery - dd, 0)),
-                qh: formatDe(pinch.hot_utility + dd),
-                qc: formatDe(pinch.cold_utility + dd),
-              }))((1 - recoveryPct / 100) * Math.max(recovery, 0))
+          ? t('summaries.pinch.partial', {
+              p: recoveryPct,
+              rec: formatDe(Math.max(share.heat_recovery, 0)),
+              qh: formatDe(share.hot_utility),
+              qc: formatDe(share.cold_utility),
+            })
           : '',
         t('summaries.pinch.rule', { T }),
         t('summaries.pinch.interact'),

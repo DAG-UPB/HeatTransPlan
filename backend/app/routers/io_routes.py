@@ -6,15 +6,16 @@ file) in the request and answers with the result. Nothing is kept on the
 server.
 """
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from typing import Any, Dict, Literal
+
+from fastapi import APIRouter, Body, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from io import BytesIO, StringIO
+from io import BytesIO
 from datetime import datetime
 import json
-import csv
 
 from app.models.project import ProjectState
+from app.services.project_csv import distance_csv, is_project_csv, project_csv, read_project_csv
 
 router = APIRouter()
 
@@ -58,80 +59,31 @@ async def export_json(project: ProjectState):
 
 # ---- CSV Export ----
 
-@router.post("/export-csv")
-async def export_csv(project: ProjectState):
-    """
-    The process data of the project sent, as CSV (one row per stream).
-    Mirrors export_to_csv() from data_collection.py.
-    """
-    output = StringIO()
-    writer = csv.writer(output)
-
-    # Header
-    writer.writerow([
-        "Process", "Subprocess", "Process Latitude", "Process Longitude", "Process Hours",
-        "Next Connection", "Stream", "Stream Type",
-        "Stream Tin (°C)", "Stream Tout (°C)", "Stream mdot", "Stream cp", "Stream CP",
-        "Stream Water Content In", "Stream Water Content Out",
-        "Stream Density", "Stream Pressure",
-        "Notes",
-    ])
-
-    # Build subprocess → group mapping
-    subprocess_to_group = {}
-    for gi, group in enumerate(project.proc_groups):
-        for si in group:
-            subprocess_to_group[si] = gi
-
-    for si, subprocess in enumerate(project.processes):
-        sub_dict = subprocess.model_dump() if hasattr(subprocess, "model_dump") else dict(subprocess)
-        sub_name = sub_dict.get("name") or f"Subprocess {si+1}"
-        next_conn = sub_dict.get("next", "")
-
-        # Process group info
-        gi = subprocess_to_group.get(si)
-        if gi is not None and gi < len(project.proc_group_names):
-            proc_name = project.proc_group_names[gi]
-            coords = project.proc_group_coordinates.get(str(gi), {})
-            if hasattr(coords, "model_dump"):
-                coords = coords.model_dump()
-            proc_lat = coords.get("lat", "")
-            proc_lon = coords.get("lon", "")
-            proc_hours = coords.get("hours", "")
-        else:
-            proc_name, proc_lat, proc_lon, proc_hours = "", "", "", ""
-
-        streams = sub_dict.get("streams", [])
-        if not streams:
-            writer.writerow([proc_name, sub_name, proc_lat, proc_lon, proc_hours, next_conn,
-                             "", "", "", "", "", "", "", "", "", "", "", ""])
-        else:
-            for stream in streams:
-                s = stream if isinstance(stream, dict) else dict(stream)
-                sv = s.get("stream_values", {})
-                writer.writerow([
-                    proc_name, sub_name, proc_lat, proc_lon, proc_hours, next_conn,
-                    s.get("name", ""), s.get("type", ""),
-                    sv.get("Tin", s.get("temp_in", "")),
-                    sv.get("Tout", s.get("temp_out", "")),
-                    sv.get("ṁ", s.get("mdot", "")),
-                    sv.get("cp", s.get("cp", "")),
-                    sv.get("CP", ""),
-                    sv.get("Water Content In", ""),
-                    sv.get("Water Content Out", ""),
-                    sv.get("Density", ""),
-                    sv.get("Pressure", ""),
-                    s.get("extra_info", {}).get("notes", "") if isinstance(s.get("extra_info"), dict) else "",
-                ])
-
-    content = output.getvalue().encode("utf-8")
-    buf = BytesIO(content)
-    filename = f"heattransplan_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+def _csv_download(text: str, stem: str) -> StreamingResponse:
+    filename = f"{stem}_{datetime.now().strftime('%Y-%m-%d')}.csv"
     return StreamingResponse(
-        buf,
-        media_type="text/csv",
+        BytesIO(text.encode("utf-8")),
+        media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.post("/export-csv")
+async def export_csv(project: Dict[str, Any] = Body(...)):
+    """The streams of the project sent, as CSV: one row per stream, semicolon
+    separated (app/services/project_csv.py). The page's Export CSV, its
+    export_csv command and the MCP tool all get this one format, and
+    /import-csv reads it back. The project is taken as the page holds it."""
+    return _csv_download(project_csv(project), "heattransplan_export")
+
+
+@router.post("/export-distances")
+async def export_distances(project: Dict[str, Any] = Body(...),
+                           metric: Literal["manhattan", "euclidean"] = "manhattan"):
+    """Distances between the subprocesses of the project sent, in meters, as
+    a CSV matrix: along north-south plus east-west (manhattan) or straight
+    (euclidean)."""
+    return _csv_download(distance_csv(project, metric), f"heattransplan_distances_{metric}")
 
 
 # ---- CSV Import ----
@@ -139,13 +91,21 @@ async def export_csv(project: ProjectState):
 @router.post("/import-csv")
 async def import_csv(file: UploadFile = File(...)):
     """Read process data from CSV and return the processes; the caller puts
-    them into its project. Nothing is kept."""
+    them into its project. Nothing is kept. Reads this app's own export
+    (/export-csv: then also the process groups, their names and positions)
+    and the older column format (name, next, conntemp, connm, conncp,
+    stream_no, mdot, temp_in, temp_out, cp)."""
     try:
         import pandas as pd
         import io as _io
 
         content = await file.read()
-        text = content.decode("utf-8")
+        text = content.decode("utf-8-sig")
+        if is_project_csv(text):
+            # This app's own export: processes, their groups and positions.
+            out = read_project_csv(text)
+            return {"imported_processes": len(out["processes"]), **out}
+        # The older column format (name, next, conntemp, ...).
         df = pd.read_csv(_io.StringIO(text))
 
         required = {"name", "next", "conntemp", "connm", "conncp", "stream_no", "mdot", "temp_in", "temp_out", "cp"}

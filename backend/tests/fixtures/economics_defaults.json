@@ -1,0 +1,63 @@
+{
+ "about": "The economic analysis' defaults and presets as GET /api/analysis/economics/defaults serves them (year left out: it is next year). Held to app/services/economics/model.py by tests/test_economics.py and to the page's input list by econConfig.test.ts.",
+ "form": {
+  "hours": 6000,
+  "i": 8,
+  "T": 20,
+  "eta": 87,
+  "hsHi": 1.11,
+  "pFuel": 6,
+  "rFuel": 3,
+  "co2Fuel": 0.201,
+  "co2Price": 55,
+  "rCo2": 0,
+  "boilerInvest": 0,
+  "fMaintRef": 3,
+  "pEl": 13,
+  "rEl": 3,
+  "co2El": 0.352,
+  "co2ElPriced": 0,
+  "co2e": 1,
+  "co2eFuel": 0.24,
+  "co2eEl": 0.56,
+  "pDemand": 0,
+  "specCost": 1000,
+  "fPI": 1.25,
+  "fPer": 1.35,
+  "fMaint": 2.5,
+  "opHours": 5,
+  "wage": 100,
+  "reinvestShare": 0,
+  "reinvestYear": 10,
+  "life": 20,
+  "rInv": 0,
+  "funding": 0,
+  "opFunding": 0,
+  "opFundingYears": 10,
+  "coolShare": 0,
+  "eer": 4
+ },
+ "presets": {
+  "gas": {
+   "eta": 87,
+   "hsHi": 1.11,
+   "pFuel": 6,
+   "co2Fuel": 0.201,
+   "co2eFuel": 0.24
+  },
+  "oil": {
+   "eta": 85,
+   "hsHi": 1.06,
+   "pFuel": 8,
+   "co2Fuel": 0.266,
+   "co2eFuel": 0.31
+  },
+  "eboiler": {
+   "eta": 99,
+   "hsHi": 1,
+   "pFuel": 13,
+   "co2Fuel": 0.352,
+   "co2eFuel": 0.56
+  }
+ }
+}

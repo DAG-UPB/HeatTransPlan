@@ -187,7 +187,7 @@ const ScenarioComparison: React.FC = () => {
         <h3>{t('scenario_cmp.combined')}</h3>
         <p className="sc-subtitle" style={{ marginBottom: 16 }}>
           Aggregated performance data across all saved scenarios.{' '}
-          {t('economics.compare_note', { T: Math.round(econForm.T) })}
+          {t('economics.compare_note', { T: econForm ? Math.round(econForm.T) : '–' })}
         </p>
         <div className="scroll-x">
           <table className="pa-table" style={{ width: '100%', minWidth: '800px' }}>
@@ -449,7 +449,9 @@ const ScenarioComparison: React.FC = () => {
               ]}
               layout={{
                 title: {
-                  text: t('economics.compare_npv_title', { T: Math.round(econForm.T) }),
+                  text: t('economics.compare_npv_title', {
+                    T: econForm ? Math.round(econForm.T) : '–',
+                  }),
                   font: { size: 14 },
                 },
                 height: 300,

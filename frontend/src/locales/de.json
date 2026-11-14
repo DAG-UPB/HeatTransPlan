@@ -94,6 +94,7 @@
     "sort_hint": "— Zum Sortieren auf Überschrift klicken",
     "export_csv": "CSV mit erfassten Daten exportieren",
     "further_exports": "Weitere Exporte ▼",
+    "export_failed": "Export fehlgeschlagen: Der Server ist nicht erreichbar.",
     "export_manhattan": "Distanzen zwischen Prozessströmen exportieren (Manhattan)",
     "export_euclidean": "Distanzen zwischen Prozessströmen exportieren (Euklidisch)",
     "export_map_pic": "Kartenbild exportieren",
@@ -642,6 +643,7 @@
     "tip": "Sobald alle erforderlichen Daten erfasst sind, wechseln Sie zur Registerkarte „<strong>Potenzialanalyse</strong>“, um das Wärmerückgewinnungspotenzial zu analysieren."
   },
   "economics": {
+    "defaults_failed": "Die Standardwerte konnten nicht vom Server geladen werden. Laden Sie die Seite neu, um es erneut zu versuchen.",
     "title": "Wirtschaftlichkeitsbetrachtung",
     "empty": "Wählen Sie oben eine oder mehrere Wärmepumpen aus, um sie wirtschaftlich zu vergleichen.",
     "help_1": "Kapitalwertmethode (VDI 2067-1:2012): KW = −(1 − Förderquote) · I + Σ_{t=1..T} (CF(t) − R(t)) / (1 + i)^t + RW / (1 + i)^T, mit CF(t) = Kosten Referenz(t) − Kosten Wärmepumpe(t). Brennstoff-, CO₂- und Strompreis steigen jährlich mit eigener Rate.",

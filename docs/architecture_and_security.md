@@ -20,13 +20,15 @@ Every part runs in its own container (`docker-compose.yml`); only Caddy is reach
 
 | Part | Folder | What it does |
 |---|---|---|
-| Page | `frontend/` | The app in the browser: data collection, analysis, economics, report. Keeps the user's project itself (saved as a file by the Save button). |
+| Page | `frontend/` | The app in the browser: the forms, the map, the charts and tables. Keeps the user's project itself (saved as a file by the Save button). It computes nothing of the analysis: the numbers come from the backend. |
 | Backend | `backend/app/` | The calculations (`modules/`, `services/`), the HTTP API (`routers/`), the live sessions for Connect AI (`services/live.py`), the limits (`rate_limit.py`). |
 | MCP server | `mcp_server/` | The tools an AI calls. Served by the backend at `/mcp` (`backend/app/mcp_http.py`); can also run on a computer as a local program. |
 | Docs | `docs/` | These pages, built into the docs container and served at `/docs`, the same version as the app. |
 | Proxy | `Caddyfile` | One public address for all of it; HTTPS on a domain. |
 
 **A visit:** the page loads from `frontend`, and every calculation is a request to `/api` that the backend answers from the data in the request. Nothing about a visitor is stored, unless they click **Connect AI**.
+
+**What stays in the page:** drawing (chart points, colours, the heat pump schematic, number formatting), the distance shown by the map's measuring tool, and two small steps it needs as the user types or drags: reading a stream's values with their units (`utils/streamUtils.ts`, the same as the backend's `services/project_analysis.py`) and taking the chosen share of the heat recovery the backend sends (`components/analysis/recoveryShare.ts`, as `services/pinch_figures.py`). Both sides are tested against the same files in `backend/tests/fixtures/`, so they cannot drift apart. Everything else (pinch figures, GCC pockets, the heat pump balance, the economics and their defaults, the CSV files, the report) is the backend's.
 
 **An agent:** it sends tool calls to `/mcp`. The MCP server runs them inside the backend, against the same API the page uses.
 
@@ -108,7 +110,7 @@ There is no login: the app is public, so each layer has to hold on its own. API 
 | **Upload size** | Requests over 50 MB. | `Caddyfile` |
 | **Browser protections** | Framing by other sites, plugins, form tricks; HTTPS only, once on a domain. No script policy on purpose: maps, charts and docs load from several sites. | `Caddyfile` |
 | **Text, never markup** | A name or note like `<script>` running when someone opens a report. | `backend/app/services/report/` |
-| **Data leaves** | A site's process data staying on the server: the server keeps no projects at all. The page holds the only copy; the AI reads and edits it through commands the page runs. A file the AI hands out (CSV, project, report) stays in memory until its one-time link is used, at most 10 minutes. | `backend/app/services/project_service.py` |
+| **Data leaves** | A site's process data staying on the server: the server keeps no projects at all. The page holds the only copy; the AI reads and edits it through commands the page runs. A file the AI hands out (CSV, project, report) stays in memory until its one-time link is used, at most 10 minutes. | `backend/app/services/live.py` (the relay), `mcp_server/heattransplan_mcp/files.py` (the download links) |
 | **Hardened containers** | A flaw in a library taking over the machine: read-only files (only `/tmp` and the activity log's folder writable), no root rights (the backend runs as an ordinary user), no way to gain any. | `docker-compose.yml`, `backend/Dockerfile` |
 | **Anonymous activity log** | Recording people while debugging: the log keeps only which feature was used, whether by a person (`human`) or an AI (`ai`), whether it worked (`system` for errors) and how long it took. No addresses, page codes or project ids (paths keep their pattern, `/api/projects/{project_id}`), no values or names: for a project only which parts changed, for an AI tool only the names of the fields it set, for an error its type and where in the code. The server keeps no access log either. It stays in the container's volume and deletes its older half past 20 MB. Read it with `docker compose exec backend python -m app.services.activity_log [rows] [actor]`. | `backend/app/services/activity_log.py` |
 | **Known flaws in libraries** | Outdated dependencies: Dependabot checks them weekly and opens a pull request for each fix. Plotly is kept below 7, the version the report is tested with. | `.github/dependabot.yml`, `backend/pyproject.toml` |

@@ -10,7 +10,7 @@ import { useUIStore } from '../../store/uiStore';
 import ChartHelpButton from '../ui/ChartHelpButton';
 import { pairedTempRange } from './pairedTempRange';
 import { regionTraces } from './pinchRegions';
-import { gccPockets } from './gccPockets';
+import { atRecoveryShare } from './recoveryShare';
 import { formatDe } from '../../utils/numberFormat';
 import { hAtT, shiftedRange, tempUnderMouse, usePinchLink } from '../../store/pinchLinkStore';
 
@@ -60,11 +60,7 @@ export default function PinchCurvesChart() {
   // heated in and cooled away: the cold curve slides d to the right (less
   // overlap, wider surplus and deficit bands) and the GCC moves d right, so d
   // flows through the pinch. At 0 % the two curves no longer overlap.
-  const maxRecovery =
-    pinchResult.streams_data
-      .filter((st) => st.ts > st.tt)
-      .reduce((sum, st) => sum + Math.abs(st.cp * (st.tt - st.ts)), 0) - pinchResult.cold_utility;
-  const d = (1 - recoveryPct / 100) * maxRecovery;
+  const d = atRecoveryShare(pinchResult, recoveryPct).unrecovered;
   const diagram = d ? { ...base, cold: { ...base.cold, H: base.cold.H.map((h) => h + d) } } : base;
   const left: any[] = [
     // The explanations switch takes every marking off, leaving the curves.
@@ -150,11 +146,7 @@ export default function PinchCurvesChart() {
 
   // Pockets: heat exchanged within the temperature ranges where the curve
   // doubles back. Only a part of the total recovery, so neutral and unlinked.
-  const pockets = gccPockets(
-    pinchResult.grand_composite_curve.H,
-    gccT,
-    pinchResult.pinch_temperature
-  );
+  const pockets = pinchResult.gcc_pockets;
   if (explain && !noRecovery && pockets.heat > 0)
     right.unshift({
       x: pockets.x.map((x) => (x === null ? null : x + gccShift)),

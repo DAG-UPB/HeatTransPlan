@@ -5,7 +5,7 @@
  *  formulas in backend/app/services/economics/formulas.py. */
 
 import { LoaderCircle, RotateCcw } from 'lucide-react';
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import Plot from './Plot';
 import { useTranslation } from 'react-i18next';
 import { useAnalysisStore } from '../../store/analysisStore';
@@ -14,14 +14,15 @@ import ChartHelpButton from '../ui/ChartHelpButton';
 import Part from '../ui/Part';
 import { buildEconomics } from './econModel';
 import { useEconomics } from '../../hooks/useEconomics';
+import { loadEconDefaults } from '../../api/analysis';
 import {
   BOOL_FIELDS,
-  DEFAULTS,
+  type EconDefaults,
   FIELDS,
   type Group,
   GREEN,
-  PRESETS,
   RED,
+  REF_TYPES,
   RESULT_ROWS_ENERGY,
   RESULT_ROWS_MONEY,
   SIGNED_ROWS,
@@ -292,7 +293,27 @@ function NumInput({
   );
 }
 
+/** Waits for the backend's default inputs (the first time only), then shows
+ *  the analysis. */
 export default function EconomicAnalysis() {
+  const { t } = useTranslation();
+  const defaults = useAnalysisStore((s) => s.econDefaults);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (!defaults) loadEconDefaults().catch(() => setFailed(true));
+  }, [defaults]);
+  if (!defaults)
+    return (
+      <Part n={4} title={t('analysis.parts.costs')} input={t('analysis.parts.costs_in')}>
+        <p className="econ-note">
+          {failed ? t('economics.defaults_failed') : <span className="spinner" />}
+        </p>
+      </Part>
+    );
+  return <EconomicAnalysisInputs defaults={defaults} />;
+}
+
+function EconomicAnalysisInputs({ defaults }: { defaults: EconDefaults }) {
   const { t, i18n } = useTranslation();
   const sym = (text: string) => (i18n.language.startsWith('en') ? symbolsEn(text) : text);
   const selected = useAnalysisStore((s) => s.selectedHPPoints);
@@ -300,7 +321,7 @@ export default function EconomicAnalysis() {
   const setSelectedHPPoints = useAnalysisStore((s) => s.setSelectedHPPoints);
   const isDark = useUIStore((s) => s.theme) === 'dark';
   // Inputs live in the store, so they survive navigation and reach the report.
-  const form = useAnalysisStore((s) => s.econForm);
+  const form = useAnalysisStore((s) => s.econForm) ?? defaults.form;
   const refType = useAnalysisStore((s) => s.econRefType);
   const setEcon = useAnalysisStore((s) => s.setEcon);
   const setForm = (f: Form) => setEcon(f, refType);
@@ -314,7 +335,7 @@ export default function EconomicAnalysis() {
     setSensBase(null);
   };
   const reset = () => {
-    setEcon(DEFAULTS, 'gas');
+    setEcon({ ...defaults.form }, 'gas');
     setSensBase(null);
     setResetCount((n) => n + 1);
   };
@@ -492,10 +513,10 @@ export default function EconomicAnalysis() {
       value={refType}
       onChange={(ev) => {
         const type = ev.target.value as RefType;
-        setEcon({ ...form, ...PRESETS[type] }, type);
+        setEcon({ ...form, ...defaults.presets[type] }, type);
       }}
     >
-      {(Object.keys(PRESETS) as RefType[]).map((type) => (
+      {REF_TYPES.map((type) => (
         <option key={type} value={type}>
           {t(`economics.ref.${type}`)}
         </option>

@@ -6,8 +6,12 @@ import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { rateCopPoint } from '../../api/analysis';
-import type { CopPointResult, OptimizedIntegrationPoint, SearchTemp } from '../../types/analysis';
-import { balance, profileAt, type Profile } from './heatPumpBalance';
+import type {
+  CopPointResult,
+  OptimizedIntegrationPoint,
+  Profile,
+  SearchTemp,
+} from '../../types/analysis';
 import './CopFormulaModal.css';
 import './HeatPumpView.css';
 
@@ -118,6 +122,13 @@ export default function HeatPumpView({
         T_sink_in: sinkIn,
         T_sink_out: sinkOut,
         delta_t_min: tMin,
+        // The backend reads demand and waste heat off the profiles and
+        // balances them at its COP, as the optimization does.
+        source_profile: sourceProfile,
+        sink_profile: sinkProfile,
+        T_source_profile: grid.source,
+        T_sink_profile: grid.sink,
+        q_sink_default: point.Q_demand,
       })
         .then((r) => !cancelled && (setResult(r), setError(null)))
         .catch(() => !cancelled && setError(t('hp_view.error')));
@@ -126,7 +137,20 @@ export default function HeatPumpView({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [pump, sourceIn, sourceOut, sinkIn, sinkOut, tMin, t]);
+  }, [
+    pump,
+    sourceIn,
+    sourceOut,
+    sinkIn,
+    sinkOut,
+    tMin,
+    t,
+    sourceProfile,
+    sinkProfile,
+    grid.source,
+    grid.sink,
+    point.Q_demand,
+  ]);
 
   const reset = () => {
     setGrid(startGrid);
@@ -150,10 +174,13 @@ export default function HeatPumpView({
   // The optimization's own steps: the demand above the sink position off the
   // sink profile, the waste heat down to the source position off the source
   // profile, and whether the COP makes them meet.
-  const qSink = profileAt(sinkProfile, grid.sink) ?? point.Q_demand;
-  const qAvailable = profileAt(sourceProfile, grid.source);
-  const bal = cop != null && qAvailable !== null ? balance(qSink, cop, qAvailable) : null;
-  const pEl = bal ? bal.pEl : null;
+  // Read off the profiles by the backend with the COP. Until its first answer
+  // the view stands on the optimization's own point, which lies on both.
+  const atPoint = grid.source === point.T_source && grid.sink === point.T_sink;
+  const qSink = result ? (result.q_sink ?? null) : atPoint ? point.Q_demand : null;
+  const qAvailable = result ? (result.q_available ?? null) : atPoint ? point.Q_source : null;
+  const bal = cop != null ? (result?.balance ?? null) : null;
+  const pEl = bal ? bal.p_el : null;
   const qSource = bal ? bal.needed : null;
   const kw = (v: number | null) => (v === null ? '–' : `${v.toFixed(1)} kW`);
   const range = (p: Profile) => [Math.min(...p.T), Math.max(...p.T)] as const;
@@ -447,7 +474,7 @@ export default function HeatPumpView({
                 <p className={`hpv-verdict hpv-${bal.state}`}>
                   {t(`hp_view.state.${bal.state}`, {
                     gap: Math.abs(bal.gap).toFixed(1),
-                    possible: bal.qSinkPossible.toFixed(1),
+                    possible: bal.q_sink_possible.toFixed(1),
                   })}
                 </p>
               )}

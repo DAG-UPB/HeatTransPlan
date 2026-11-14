@@ -11,6 +11,7 @@ from app.services.report.figures import _chart, _optimization_figure
 from app.services.report.formatting import _fmt, _part
 from app.services.report.points import _headline_point, _q_source, _same_point, _table_points
 from app.services.report.texts import I18N
+from app.services.pinch_figures import at_recovery_share
 
 # Column tints from the page's table, matching the heat pump overlay in the
 # chart so a column can be read back to the arrow it belongs to.
@@ -36,6 +37,7 @@ def _render_pinch_content(
     map_streams_img_html: str,
     lang: str = "en",
     economics: Optional[Dict[str, Any]] = None,
+    recovery_pct: float = 100.0,
 ) -> str:
     """Helper to render the detailed analysis content for a single scenario."""
     texts = I18N.get(lang, I18N["en"])
@@ -51,9 +53,10 @@ def _render_pinch_content(
         """
 
     pr = pinch_result
-    total_hot_duty = sum(abs(s.Q) for s in selected_streams if s.Tin > s.Tout)
-    # What the hot streams give off, less what still has to be cooled away.
-    heat_recovery = total_hot_duty - pr.cold_utility
+    # The cards at the share of heat recovery chosen on the page, as the page
+    # shows them; the comparison table below stays on the pinch minimums, as
+    # the page's status quo comparison does.
+    share = at_recovery_share(pr, recovery_pct)
 
     # Streams table
     rows = ""
@@ -75,11 +78,14 @@ def _render_pinch_content(
     # Metrics
     metrics_html = f"""
     <div class="metrics-row">
-      <div class="metric-card hot"><div class="metric-label">{texts['min_heating']}</div><div class="metric-value">{pr.hot_utility:.2f} kW</div></div>
-      <div class="metric-card cold"><div class="metric-label">{texts['min_cooling']}</div><div class="metric-value">{pr.cold_utility:.2f} kW</div></div>
+      <div class="metric-card hot"><div class="metric-label">{texts['min_heating']}</div><div class="metric-value">{share['hot_utility']:.2f} kW</div></div>
+      <div class="metric-card cold"><div class="metric-label">{texts['min_cooling']}</div><div class="metric-value">{share['cold_utility']:.2f} kW</div></div>
       <div class="metric-card pinch"><div class="metric-label">{texts['pinch_temp']}</div><div class="metric-value">{pr.pinch_temperature:.1f} °C</div></div>
-      <div class="metric-card recovery"><div class="metric-label">{texts['heat_recovery']}</div><div class="metric-value">{heat_recovery:.2f} kW</div></div>
+      <div class="metric-card recovery"><div class="metric-label">{texts['heat_recovery']}</div><div class="metric-value">{share['heat_recovery']:.2f} kW</div></div>
     </div>"""
+    if recovery_pct < 100:
+        note = texts['recovery_share'].format(p=f"{recovery_pct:g}")
+        metrics_html += f"<p class='muted'>{note}</p>"
 
     # Comparison table (Status Quo vs Proposal)
     comparison_html = ""
@@ -188,7 +194,7 @@ def _render_pinch_content(
     if pr.composite_diagram.hot.get("H"):
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=pr.composite_diagram.hot["H"], y=pr.composite_diagram.hot["T"], mode='lines+markers', name=texts['hot'], line=dict(color='#dc2626')))
-        fig.add_trace(go.Scatter(x=pr.composite_diagram.cold["H"], y=pr.composite_diagram.cold["T"], mode='lines+markers', name=texts['cold'], line=dict(color='#2563eb')))
+        fig.add_trace(go.Scatter(x=[h + share['unrecovered'] for h in pr.composite_diagram.cold["H"]], y=pr.composite_diagram.cold["T"], mode='lines+markers', name=texts['cold'], line=dict(color='#2563eb')))
         fig.add_hline(y=pr.pinch_temperature, line_dash='dash', line_color='#94a3b8', annotation_text="Pinch")
         fig.update_layout(**size, xaxis_title='H (kW)', yaxis_title='T (°C)')
         comp_html = _chart(fig, texts['composite_title'])

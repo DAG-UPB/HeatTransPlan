@@ -531,8 +531,9 @@ async def set_site_plan(project_id: str, image_path: Optional[str] = None,
 
 @tool
 async def export_csv(project_id: str, file_path: Optional[str] = None) -> str:
-    """Write the project's streams as CSV (the backend's export). Online: a
-    download link for the user."""
+    """Write the project's streams as CSV, one row per stream, semicolon
+    separated: the same file as the page's Export CSV, and what import_csv
+    reads back. Online: a download link for the user."""
     project_id = await _page(project_id)
     # The page holds the project; the backend converts it and keeps nothing.
     text = await api.post("/api/io/export-csv", json=await _load(project_id))
@@ -554,6 +555,13 @@ async def import_csv(project_id: str, file_path: Optional[str] = None,
                             files={"file": (name, data, "text/csv")})
     state = await _load(project_id)
     state["processes"] = out["processes"]
+    # This app's own CSV also brings the processes the subprocesses sit in.
+    for key in ("proc_groups", "proc_group_names", "proc_group_coordinates"):
+        if key in out:
+            state[key] = out[key]
+    if "proc_groups" in out:
+        state["proc_group_expanded"] = [False] * len(out["proc_groups"])
+        state["proc_group_info_expanded"] = [False] * len(out["proc_groups"])
     _analysis.pop(project_id, None)
     session_id = (await _page_info(project_id))["session_id"]
     await _live(session_id, "set_project", {"state": state})
@@ -587,12 +595,11 @@ def _summary(out: Dict[str, Any]) -> Dict[str, Any]:
         s["message"] = out["message"]
         return s
     p = out["pinch"]
-    hot = sum(x["Q"] for x in out["streams"] if x["type"] == "Hot")
     s["pinch"] = {
         "pinch_temperature": p["pinch_temperature"],
         "min_heating_kW": p["hot_utility"],
         "min_cooling_kW": p["cold_utility"],
-        "heat_recovery_kW": hot - p["cold_utility"],
+        "heat_recovery_kW": p["max_heat_recovery"],
     }
     s["heat_pump_types"] = [
         {k: h.get(k) for k in ("name", "available", "cop", "t_source", "t_sink", "q_sink", "reason")}
@@ -674,7 +681,8 @@ async def analyse_project(project_id: str, selected_streams: Optional[List[str]]
         "economics_form": economics_inputs, "ref_type": reference_heater,
     })
     _keep(_analysis, project_id, {**out, "economics_inputs": economics_inputs,
-                                  "reference_heater": reference_heater, "selected_points": []})
+                                  "reference_heater": reference_heater, "selected_points": [],
+                                  "recovery_pct": heat_recovery_pct})
     summary = _summary(out)
     demands = state.get("energy_demands") or []
     if "pinch" in out and any(d.get("heat_demand") or d.get("cooling_demand") for d in demands):
@@ -841,6 +849,7 @@ async def generate_report(project_id: str, file_path: Optional[str] = None,
         "name": "All streams", "selected_streams": streams, "pinch_result": cache["pinch"],
         "heat_pumps": cache["hpi"]["heat_pumps"], "hpi_optimization_result": cache["optimization"],
         "selected_hp_points": cache["selected_points"], "energy_demands": [], "t_min": cache["t_min"],
+        "recovery_pct": cache.get("recovery_pct", 100),
     }
     html = await api.post("/api/analysis/report", json={
         "language": language, "project_notes": state.get("project_notes", ""),

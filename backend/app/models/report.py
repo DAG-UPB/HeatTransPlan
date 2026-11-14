@@ -49,6 +49,9 @@ class ScenarioReportData(BaseModel):
     selected_hp_points: List[OptimizedIntegrationPoint] = Field(default_factory=list)
     energy_demands: List[ReportEnergyDemand] = Field(default_factory=list)
     t_min: float = 10.0
+    # Share of the maximum heat recovery credited (the page's slider), %. The
+    # pinch cards show the utilities at this share, as the page does.
+    recovery_pct: float = Field(100.0, ge=0, le=100)
     # Economic analysis of the scenario's pump, built by the frontend
     # (econReportData): translated labels, formatted values, Plotly specs.
     economics: Optional[Dict[str, Any]] = None

@@ -1,12 +1,22 @@
 /** The AI's commands change the page exactly as its controls do. */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useAnalysisStore } from '../store/analysisStore';
 import { useProjectStore } from '../store/projectStore';
 import type { HPIOptimizationResult } from '../types/analysis';
 import type { ProjectState } from '../types/project';
 import fixture from '../test/fixtures/optimization.json';
 import { runCommand, useAiHistory } from './commands';
+import { econDefaults } from '../test/backendFixtures';
+
+// The CSV comes from the backend; here a stand-in that says what it was sent.
+vi.mock('../api/client', () => ({
+  default: {
+    post: vi.fn(async (url: string, state: ProjectState) => ({
+      data: [`${url}`, ...state.processes.map((p) => p.name)].join('\n'),
+    })),
+  },
+}));
 
 // The backend's example project. A glob, not an import: the frontend image is
 // built from frontend/ alone, where the type check cannot see backend/.
@@ -30,6 +40,10 @@ beforeEach(() => {
     hpiOptimizationLoading: false,
     scenarios: [],
     activeScenarioId: null,
+    // As loaded from the backend at start.
+    econDefaults: econDefaults(),
+    econForm: econDefaults().form,
+    econRefType: 'gas',
   });
   useAiHistory.setState({ steps: [] });
 });
@@ -113,9 +127,14 @@ describe('live commands', () => {
 
   it('changes economics inputs and rejects unknown ones', async () => {
     await runCommand('set_economics', { form: { pFuel: 9 }, ref_type: 'oil' });
-    expect(useAnalysisStore.getState().econForm.pFuel).toBe(9);
+    expect(useAnalysisStore.getState().econForm?.pFuel).toBe(9);
+    // The oil heater's own values came with it, from the backend's presets.
+    expect(useAnalysisStore.getState().econForm?.eta).toBe(econDefaults().presets.oil.eta);
     expect(useAnalysisStore.getState().econRefType).toBe('oil');
     await expect(runCommand('set_economics', { form: { nope: 1 } })).rejects.toThrow(/Unknown/);
+    await runCommand('reset_economics', {});
+    expect(useAnalysisStore.getState().econForm).toEqual(econDefaults().form);
+    expect(useAnalysisStore.getState().econRefType).toBe('gas');
   });
 
   it('reports the view, waits for quiet and explains unknown commands', async () => {
@@ -125,8 +144,11 @@ describe('live commands', () => {
     expect(await runCommand('list_commands', {})).toContain('select_streams');
   });
 
-  it('exports the project as CSV text', async () => {
+  it('exports the project as CSV text, made by the backend', async () => {
     const csv = (await runCommand('export_csv', {})) as string;
-    expect(csv.split('\n').length).toBeGreaterThan(6);
+    expect(csv.split('\n')[0]).toBe('/api/io/export-csv');
+    expect(csv.split('\n').length).toBe(1 + useProjectStore.getState().state.processes.length);
+    const dist = (await runCommand('export_distances_csv', { metric: 'euclidean' })) as string;
+    expect(dist.split('\n')[0]).toBe('/api/io/export-distances?metric=euclidean');
   });
 });

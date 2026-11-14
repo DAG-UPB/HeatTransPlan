@@ -94,6 +94,7 @@
     "sort_hint": "— Click header to sort",
     "export_csv": "Export CSV with collected data",
     "further_exports": "Further exports ▼",
+    "export_failed": "Export failed: the server could not be reached.",
     "export_manhattan": "Export distances between streams (Manhattan)",
     "export_euclidean": "Export distances between streams (Euclidean)",
     "export_map_pic": "Export Map Picture",
@@ -642,6 +643,7 @@
     "tip": "Once all the data needed is collected, switch to the “<strong>Potential Analysis</strong>” tab to analyse the heat recovery potential."
   },
   "economics": {
+    "defaults_failed": "The default inputs could not be loaded from the server. Reload the page to try again.",
     "title": "Economic analysis",
     "empty": "Select one or more heat pumps in the table above to compare them economically.",
     "help_1": "Net present value method (VDI 2067-1:2012): NPV = −(1 − funding share) · I + Σ_{t=1..T} (CF(t) − R(t)) / (1 + i)^t + RV / (1 + i)^T, with CF(t) = reference cost(t) − heat pump cost(t). Fuel, CO₂ and electricity prices rise each year by their own rate.",

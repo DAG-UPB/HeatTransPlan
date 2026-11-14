@@ -8,7 +8,7 @@ import { runHPI, runHPIOptimization, runPinch, runStatusQuo } from '../api/analy
 import { useAnalysisStore } from '../store/analysisStore';
 import { useProjectStore } from '../store/projectStore';
 import type { PinchStream } from '../types/analysis';
-import { getStreamInfo } from '../utils/streamUtils';
+import { selectedStreams as streamsOfSelection } from '../utils/streamUtils';
 
 const DEFAULT_HP_TYPES = [
   'Prototypical Stirling',
@@ -44,43 +44,9 @@ export function useAnalysisPipeline() {
   const [pinchError, setPinchError] = useState<string | null>(null);
   const [, setHPIError] = useState<string | null>(null);
 
-  // Helper to extract valid streams from a selection object
+  // The streams of a selection, read as the backend reads them.
   const getStreamsFromSelection = useCallback(
-    (selection: Record<string, boolean>) => {
-      const result: Array<{
-        name: string;
-        CP: number;
-        Tin: number;
-        Tout: number;
-        Q: number;
-        type: 'Hot' | 'Cold';
-      }> = [];
-      for (const [key, selected] of Object.entries(selection)) {
-        if (!selected || !key.startsWith('stream_')) continue;
-        const parts = key.split('_');
-        const pIdx = parseInt(parts[1], 10);
-        const sIdx = parseInt(parts[2], 10);
-        if (pIdx >= processes.length) continue;
-        const proc = processes[pIdx];
-        const streams = proc.streams ?? [];
-        if (sIdx >= streams.length) continue;
-        const stream = streams[sIdx];
-        const info = getStreamInfo(stream);
-        if (info.tin !== null && info.tout !== null && info.CP !== null) {
-          const procName = proc.name || `Subprocess ${pIdx + 1}`;
-          const streamName = stream.name || `Stream ${sIdx + 1}`;
-          result.push({
-            name: `${procName} - ${streamName}`,
-            CP: info.CP,
-            Tin: info.tin,
-            Tout: info.tout,
-            Q: info.Q ?? 0,
-            type: info.tin > info.tout ? 'Hot' : 'Cold',
-          });
-        }
-      }
-      return result;
-    },
+    (selection: Record<string, boolean>) => streamsOfSelection(processes, selection),
     [processes]
   );
 
@@ -106,7 +72,7 @@ export function useAnalysisPipeline() {
       setPinchLoading(true);
       setPinchError(null);
       try {
-        const pinchStreams: PinchStream[] = streamsData.map((s: any) => ({
+        const pinchStreams: PinchStream[] = streamsData.map((s) => ({
           name: s.name,
           CP: s.CP,
           T_supply: s.Tin,

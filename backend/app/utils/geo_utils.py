@@ -62,15 +62,23 @@ def snapshot_lonlat_to_pixel(
 
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Calculate the great circle distance in meters between two points."""
-    R = 6371000  # Earth radius in meters
-    phi1 = math.radians(lat1)
-    phi2 = math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dlambda = math.radians(lon2 - lon1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    """Great circle distance in meters between two points. Written in the
+    order the page measured it before (frontend/src/utils/geoUtils.ts), so the
+    distances come out the same to the last digit."""
+    R = 6371e3  # Earth radius in meters
+    d_lat = ((lat2 - lat1) * math.pi) / 180
+    d_lon = ((lon2 - lon1) * math.pi) / 180
+    a = (math.sin(d_lat / 2) * math.sin(d_lat / 2)
+         + math.cos((lat1 * math.pi) / 180) * math.cos((lat2 * math.pi) / 180)
+         * math.sin(d_lon / 2) * math.sin(d_lon / 2))
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
+
+
+def manhattan_spherical_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """North-south plus east-west distance, meters: along the streets rather
+    than across the site."""
+    return haversine_distance(lat1, lon1, lat2, lon1) + haversine_distance(lat2, lon1, lat2, lon2)
 
 
 def geocode_address(query: str) -> list[dict]:
