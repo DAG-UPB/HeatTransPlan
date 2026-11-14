@@ -32,10 +32,12 @@ The server stores nothing about keys: a key is signed with `API_KEY_SECRET` (HMA
 
 | Method | Path | What it does |
 |---|---|---|
-| POST | `/api/analysis/pinch` | Pinch analysis of a list of streams |
+| POST | `/api/analysis/pinch` | Pinch analysis of a list of streams, with the hot-stream duty, the maximum heat recovery and the pockets of the grand composite curve |
 | POST | `/api/analysis/hpi` | Heat pump integration (the prototypical technologies) |
 | POST | `/api/analysis/hpi-optimization` | Heat pump optimization: every refrigerant over the source/sink grid |
 | POST | `/api/analysis/cop-formula/validate` | Check a custom COP formula |
+| GET | `/api/analysis/cop-point/options` | The trained heat pumps and their temperature ranges |
+| POST | `/api/analysis/cop-point` | The COP of one heat pump at four temperatures; with the optimization's profiles also the balance of waste heat and demand (the page's heat pump view) |
 | POST | `/api/analysis/cop-model/inspect` | COP training module: columns, rows and a column guess of an uploaded table |
 | POST | `/api/analysis/cop-model/train` | COP training module: train a COP network on mapped columns |
 | GET | `/api/features` | Which optional modules the server runs |
@@ -43,7 +45,7 @@ The server stores nothing about keys: a key is signed with `API_KEY_SECRET` (HMA
 | GET | `/api/analysis/economics/defaults` | Economic inputs with their defaults, and the reference-heater presets |
 | POST | `/api/analysis/economics` | Economic analysis of a heat pump (see [Economic analysis](economic_analysis.md)) |
 | POST | `/api/analysis/status-quo` | Current demands against the pinch minimum |
-| POST | `/api/analysis/report` | The HTML report |
+| POST | `/api/analysis/report` | The HTML report (each scenario's `recovery_pct`: the pinch cards at that share of heat recovery) |
 | POST | `/api/analysis/map-preview` | The process map as an image |
 
 **Import / export and assets**
@@ -51,8 +53,10 @@ The server stores nothing about keys: a key is signed with `API_KEY_SECRET` (HMA
 | Method | Path | What it does |
 |---|---|---|
 | POST | `/api/io/import-json`, `/api/io/import-json-body` | Check a project file and return it as a project |
-| POST | `/api/io/export-json`, `/api/io/export-csv` | The project sent, as a JSON or CSV download |
-| POST | `/api/io/import-csv` | Read streams from CSV and return them as processes |
+| POST | `/api/io/export-json` | The project sent, as a JSON download |
+| POST | `/api/io/export-csv` | The project's streams as CSV, one row per stream, semicolon separated: the file of the page's Export CSV and of the MCP tool |
+| POST | `/api/io/export-distances?metric=manhattan\|euclidean` | Distances between the subprocesses, in meters, as a CSV matrix |
+| POST | `/api/io/import-csv` | Read a CSV from `/export-csv` back (processes, their groups, names and positions), or the older column format (processes only) |
 | GET | `/api/assets/examples[/{name}]` | The example projects |
 | GET | `/api/assets/models` | The process model hierarchy |
 

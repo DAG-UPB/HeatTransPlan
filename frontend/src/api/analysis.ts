@@ -16,6 +16,8 @@ import type {
   OptimizedIntegrationPoint,
 } from '../types/analysis';
 import type { EconNumbers } from '../types/economics';
+import type { EconDefaults } from '../components/analysis/econConfig';
+import { useAnalysisStore } from '../store/analysisStore';
 
 export async function runPinch(req: PinchRequest): Promise<PinchResult> {
   const { data } = await client.post<PinchResult>('/api/analysis/pinch', req);
@@ -97,4 +99,25 @@ export async function getMapPreview(
 ): Promise<{ map_b64: string }> {
   const { data } = await client.post<{ map_b64: string }>('/api/analysis/map-preview', payload);
   return data;
+}
+
+let econDefaultsPending: Promise<EconDefaults> | null = null;
+
+/** The economic analysis' default inputs and reference heater presets, from
+ *  the backend (the one place they are kept). Asked once; kept in the
+ *  analysis store, where the inputs start from them. A failed request is
+ *  asked again next time. */
+export function loadEconDefaults(): Promise<EconDefaults> {
+  const known = useAnalysisStore.getState().econDefaults;
+  if (known) return Promise.resolve(known);
+  econDefaultsPending ??= client
+    .get<EconDefaults>('/api/analysis/economics/defaults')
+    .then(({ data }) => {
+      useAnalysisStore.getState().setEconDefaults(data);
+      return data;
+    })
+    .finally(() => {
+      econDefaultsPending = null;
+    });
+  return econDefaultsPending;
 }

@@ -106,6 +106,7 @@ def generate_html_report(req: ReportRequest) -> str:
             sc.selected_hp_points, sc.energy_demands, sc_map_html,
             lang=lang,
             economics=sc.economics,
+            recovery_pct=sc.recovery_pct,
         )
         scenario_pages_html += page
         # The scenario, then the app's steps it reached, as they appear on it.

@@ -14,11 +14,7 @@ import type {
 } from '../types/analysis';
 import type { CustomCopModelSpec } from '../types/copTraining';
 import { newId } from '../utils/id';
-import {
-  DEFAULTS as ECON_DEFAULTS,
-  type Form as EconForm,
-  type RefType,
-} from '../components/analysis/econConfig';
+import type { EconDefaults, Form as EconForm, RefType } from '../components/analysis/econConfig';
 
 interface AnalysisStore {
   // Stream selection: "stream_{procIdx}_{streamIdx}" → boolean
@@ -34,8 +30,11 @@ interface AnalysisStore {
 
   // Economic analysis inputs. One set for the project, so scenarios are
   // compared under the same prices; kept here so the report can use them.
-  econForm: EconForm;
+  // null until the backend's defaults arrived (loadEconDefaults).
+  econForm: EconForm | null;
   econRefType: RefType;
+  /** The backend's default inputs and reference heater presets. */
+  econDefaults: EconDefaults | null;
 
   // Pinch controls
   tMin: number;
@@ -77,6 +76,9 @@ interface AnalysisStore {
     energyDemands: EnergyDemandLocal[];
     selectedHPPoints: OptimizedIntegrationPoint[];
     tMin: number;
+    /** The heat recovery share its results were computed at (the report shows
+     *  the pinch cards at it). Missing in scenarios saved before: 100. */
+    recoveryPct?: number;
     // Results for comparison
     pinchResult?: PinchResult | null;
     hpiResult?: HPIResult | null;
@@ -97,6 +99,8 @@ interface AnalysisStore {
   removeEnergyDemand: (index: number) => void;
   updateEnergyDemand: (index: number, demand: Partial<EnergyDemandLocal>) => void;
   setEcon: (form: EconForm, refType: RefType) => void;
+  /** The defaults arrived: kept, and the inputs start from them if unset. */
+  setEconDefaults: (defaults: EconDefaults) => void;
   setTMin: (val: number) => void;
   setShowShifted: (val: boolean) => void;
   setProfileMode: (mode: ProfileMode) => void;
@@ -134,6 +138,7 @@ const syncScenario = (state: AnalysisStore) => {
             energyDemands: JSON.parse(JSON.stringify(state.energyDemands)),
             selectedHPPoints: JSON.parse(JSON.stringify(state.selectedHPPoints)),
             tMin: state.tMin,
+            recoveryPct: state.recoveryPct,
             pinchResult: state.pinchResult ? JSON.parse(JSON.stringify(state.pinchResult)) : null,
             hpiResult: state.hpiResult ? JSON.parse(JSON.stringify(state.hpiResult)) : null,
             hpiOptimizationResult: state.hpiOptimizationResult
@@ -159,8 +164,9 @@ export const useAnalysisStore = create<AnalysisStore>((set) => ({
       selected_cooling_streams: [],
     },
   ],
-  econForm: ECON_DEFAULTS,
+  econForm: null,
   econRefType: 'gas',
+  econDefaults: null,
   tMin: 10,
   // The GCC is on shifted temperatures, so the composite curves start there
   // too and the two share one scale.
@@ -254,6 +260,8 @@ export const useAnalysisStore = create<AnalysisStore>((set) => ({
   },
 
   setEcon: (form, refType) => set({ econForm: form, econRefType: refType }),
+  setEconDefaults: (defaults) =>
+    set((s) => ({ econDefaults: defaults, econForm: s.econForm ?? { ...defaults.form } })),
 
   setTMin: (val) => {
     set({ tMin: val });
@@ -325,6 +333,7 @@ export const useAnalysisStore = create<AnalysisStore>((set) => ({
         energyDemands: JSON.parse(JSON.stringify(s.energyDemands)),
         selectedHPPoints: JSON.parse(JSON.stringify(s.selectedHPPoints)),
         tMin: s.tMin,
+        recoveryPct: s.recoveryPct,
         pinchResult: s.pinchResult ? JSON.parse(JSON.stringify(s.pinchResult)) : null,
         hpiResult: s.hpiResult ? JSON.parse(JSON.stringify(s.hpiResult)) : null,
         hpiOptimizationResult: s.hpiOptimizationResult

@@ -18,7 +18,7 @@ export interface EconJob {
 /** One analysis per job (e.g. per saved scenario), all with the same inputs. */
 export function useEconomicsList(
   jobs: EconJob[],
-  form: Record<string, number>,
+  form: Record<string, number> | null,
   refType: string,
   sensBase: { fuel: number; el: number } | null = null
 ) {
@@ -28,6 +28,8 @@ export function useEconomicsList(
 
   useEffect(() => {
     const id = ++latest.current;
+    // No inputs yet: the backend's defaults are still on their way.
+    if (!form) return;
     const timer = setTimeout(() => {
       Promise.all(jobs.map((j) => runEconomics(form, refType, j.selected, j.opt, sensBase)))
         .then((all) => {

@@ -3,8 +3,10 @@ streams, then pinch, heat pump integration, optimization and, if asked, the
 economic analysis. What the page computes in the browser, for callers
 without one (the MCP server working on project files).
 
-stream_info is the same as frontend/src/utils/streamUtils.ts getStreamInfo;
-tests/test_project_analysis.py holds the two to the same answers.
+stream_info is the same as frontend/src/utils/streamUtils.ts getStreamInfo, and
+selected_streams as selectedStreams there: tests/fixtures/stream_info_reference.json
+and selected_streams_reference.json hold the two to the same answers (tested
+on both sides).
 """
 
 from __future__ import annotations
@@ -129,10 +131,11 @@ def selected_streams(state: ProjectState, selection: Dict[str, bool]) -> List[Di
         if not on or not key.startswith("stream_"):
             continue
         parts = key.split("_")
-        try:
-            pi, si = int(parts[1]), int(parts[2])
-        except (IndexError, ValueError):
+        # Indices only: anything else names no stream.
+        if len(parts) < 3 or not (parts[1].isascii() and parts[1].isdigit()
+                                  and parts[2].isascii() and parts[2].isdigit()):
             continue
+        pi, si = int(parts[1]), int(parts[2])
         if pi >= len(state.processes):
             continue
         proc = state.processes[pi]

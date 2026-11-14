@@ -1,3 +1,6 @@
+/** Distance between two clicked map points, for the measuring tool. The
+ *  exported distance matrix is made by the backend (app/utils/geo_utils.py). */
+
 export function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371e3; // Earth radius in meters
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -10,15 +13,4 @@ export function haversineDistance(lat1: number, lon1: number, lat2: number, lon2
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
-}
-
-export function manhattanSphericalDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
-  const dNS = haversineDistance(lat1, lon1, lat2, lon1);
-  const dEW = haversineDistance(lat2, lon1, lat2, lon2);
-  return dNS + dEW;
 }

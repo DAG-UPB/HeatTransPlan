@@ -1,8 +1,12 @@
 /**
- * Pure utility to extract stream info — direct port of the Python
- * get_stream_info() from potential_analysis.py (lines 2289-2418).
+ * A stream's inlet/outlet temperature (°C), mass flow (kg/s), cp (kJ/(kg·K)),
+ * CP (kW/K) and duty Q (kW), whichever way it was entered. The page reads
+ * streams with this, the backend with app/services/project_analysis.py
+ * stream_info: both are held to tests/fixtures/stream_info_reference.json
+ * (streamUtils.test.ts here, tests/test_project_analysis.py there).
  */
 
+import type { ProcessNode } from '../types/process';
 import type { Stream } from '../types/stream';
 import type { StreamInfo } from '../types/analysis';
 
@@ -107,4 +111,52 @@ export function getStreamInfo(stream: Stream): StreamInfo {
   }
 
   return { tin, tout, mdot, cp: cpVal, CP, Q, type };
+}
+
+/** A selected stream as the analysis gets it. */
+export interface AnalysisStream {
+  name: string;
+  CP: number;
+  Tin: number;
+  Tout: number;
+  Q: number;
+  type: 'Hot' | 'Cold';
+}
+
+/** The streams ticked in a selection ("stream_<subprocess>_<stream>" → on)
+ *  that have inlet, outlet temperature and CP, named "<subprocess> - <stream>".
+ *  The same as the backend's project_analysis.selected_streams (both held to
+ *  tests/fixtures/selected_streams_reference.json). */
+export function selectedStreams(
+  processes: ProcessNode[],
+  selection: Record<string, boolean>
+): AnalysisStream[] {
+  const result: AnalysisStream[] = [];
+  for (const [key, selected] of Object.entries(selection)) {
+    if (!selected || !key.startsWith('stream_')) continue;
+    const parts = key.split('_');
+    // Indices only: anything else names no stream.
+    if (!/^\d+$/.test(parts[1] ?? '') || !/^\d+$/.test(parts[2] ?? '')) continue;
+    const pIdx = parseInt(parts[1], 10);
+    const sIdx = parseInt(parts[2], 10);
+    if (pIdx >= processes.length) continue;
+    const proc = processes[pIdx];
+    const streams = proc.streams ?? [];
+    if (sIdx >= streams.length) continue;
+    const stream = streams[sIdx];
+    const info = getStreamInfo(stream);
+    if (info.tin !== null && info.tout !== null && info.CP !== null) {
+      const procName = proc.name || `Subprocess ${pIdx + 1}`;
+      const streamName = stream.name || `Stream ${sIdx + 1}`;
+      result.push({
+        name: `${procName} - ${streamName}`,
+        CP: info.CP,
+        Tin: info.tin,
+        Tout: info.tout,
+        Q: info.Q ?? 0,
+        type: info.tin > info.tout ? 'Hot' : 'Cold',
+      });
+    }
+  }
+  return result;
 }

@@ -43,6 +43,14 @@ export interface PinchResult {
     ss?: number;
     st?: number;
   }>;
+  // Computed by the backend from the fields above.
+  /** Heat the hot streams give off, kW. */
+  total_hot_duty: number;
+  /** Heat recovered between streams at full recovery, kW. */
+  max_heat_recovery: number;
+  /** Pockets of the grand composite curve: Plotly 'toself' polygons (null
+   *  between pockets) and the heat exchanged inside them, kW. */
+  gcc_pockets: { x: Array<number | null>; y: Array<number | null>; heat: number };
 }
 
 // ---------------------------------------------------------------------------
@@ -215,6 +223,32 @@ export interface CopPointRequest {
   T_sink_out: number;
   /** ΔTmin: Carnot reads the real temperatures, ΔTmin/2 off these. */
   delta_t_min?: number;
+  /** The optimization's profiles and where the point stands on them: the
+   *  answer then carries the balance of waste heat and demand. */
+  source_profile?: Profile;
+  sink_profile?: Profile;
+  T_source_profile?: number;
+  T_sink_profile?: number;
+  /** Sink duty where the sink profile has no points. */
+  q_sink_default?: number;
+}
+
+/** A source or sink profile: duty H (kW) over temperature T (°C, ascending). */
+export interface Profile {
+  H: number[];
+  T: number[];
+}
+
+export interface CopPointBalance {
+  /** Waste heat the pump draws for the whole sink duty: Q_sink·(COP−1)/COP. */
+  needed: number;
+  /** Electricity: Q_sink / COP. */
+  p_el: number;
+  /** available − needed. */
+  gap: number;
+  state: 'balanced' | 'source_limited' | 'demand_limited';
+  /** Sink duty the available waste heat can carry. */
+  q_sink_possible: number;
 }
 
 export interface CopPointResult {
@@ -224,6 +258,11 @@ export interface CopPointResult {
   carnot_ideal: number | null;
   /** What falls outside the training data or flows the wrong way. */
   checks: Array<{ code: string; value?: number | null; min?: number | null; max?: number | null }>;
+  /** With profiles in the request: demand off the sink profile, waste heat
+   *  off the source profile, and their balance at cop_2t. */
+  q_sink?: number | null;
+  q_available?: number | null;
+  balance?: CopPointBalance | null;
 }
 
 /** Which trained COP model scores the refrigerants: source return + sink supply

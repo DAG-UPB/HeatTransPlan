@@ -8,7 +8,8 @@ import i18n from '../../i18n';
 import type { EconNumbers } from '../../types/economics';
 import numbers from '../../test/fixtures/economics_numbers.json';
 import { buildEconomics, econReportData } from './econModel';
-import { DEFAULTS, type RefType } from './econConfig';
+import type { RefType } from './econConfig';
+import { econDefaults } from '../../test/backendFixtures';
 import { dump } from '../../test/dump';
 
 // What the backend returns for each case (tests/test_economics.py proves
@@ -16,6 +17,8 @@ import { dump } from '../../test/dump';
 const N = numbers as unknown as Record<string, EconNumbers | null>;
 const picks = ['none', 'one', 'several'];
 const REFS: RefType[] = ['gas', 'oil', 'eboiler'];
+// The backend's default inputs, as the page gets them.
+const DEFAULTS = econDefaults().form;
 
 beforeEach(async () => {
   await i18n.changeLanguage('en');

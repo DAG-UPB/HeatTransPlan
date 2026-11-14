@@ -16,6 +16,7 @@ from app.models.analysis import (
     CopPointRequest, CopPointResult,
 )
 from app.services.optimization.alternatives import _load_model_and_data, cop_at
+from app.services.optimization.balance import point_balance
 from app.models.economics import EconomicsRequest, ProjectAnalysisRequest
 from app.services.project_analysis import analyse_project
 from app.models.report import ReportRequest
@@ -75,11 +76,19 @@ def cop_point(request: CopPointRequest):
     optimization rates it (4- and 2-temperature model, Carnot). For the heat
     pump view, where the temperatures are tried out by hand."""
     try:
-        return cop_at(request.refrigerant, request.medium_sink, request.T_source_in,
-                      request.T_source_out, request.T_sink_in, request.T_sink_out,
-                      request.delta_t_min)
+        out = cop_at(request.refrigerant, request.medium_sink, request.T_source_in,
+                     request.T_source_out, request.T_sink_in, request.T_sink_out,
+                     request.delta_t_min)
     except KeyError as exc:
         raise HTTPException(404, str(exc.args[0]))
+    if request.source_profile is not None or request.sink_profile is not None:
+        out.update(point_balance(
+            out["cop_2t"], request.source_profile, request.sink_profile,
+            request.T_source_out if request.T_source_profile is None else request.T_source_profile,
+            request.T_sink_out if request.T_sink_profile is None else request.T_sink_profile,
+            request.q_sink_default,
+        ))
+    return out
 
 
 @router.post("/cop-formula/validate", response_model=CopFormulaValidateResult)

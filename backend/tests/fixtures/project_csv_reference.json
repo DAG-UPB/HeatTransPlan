@@ -1,0 +1,350 @@
+{
+ "about": "What the page's own export wrote (frontend/src/utils/csvExport.ts before the export moved to the backend). The backend's export must give the same text.",
+ "projects": {
+  "edge": {
+   "project": {
+    "processes": [
+     {
+      "name": "Dryer",
+      "lat": 51.7,
+      "lon": 8.77,
+      "hours": "6000",
+      "extra_info": {
+       "notes": "main line",
+       "water_content_in": "0.3",
+       "density": "1.2"
+      },
+      "streams": [
+       {
+        "name": "Exhaust",
+        "type": "air",
+        "stream_values": {
+         "Tin": "120",
+         "Tout": "40",
+         "ṁ": "3600",
+         "cp": "1005",
+         "Water Content In": "0.05",
+         "Pressure": "1"
+        },
+        "stream_units": {
+         "ṁ": "kg/h",
+         "cp": "J/(kg·K)"
+        }
+       },
+       {
+        "name": "Water",
+        "stream_values": {
+         "Tin": "293.15",
+         "Tout": "353.15",
+         "CP": "12500"
+        },
+        "stream_units": {
+         "Tin": "K",
+         "Tout": "K",
+         "CP": "W/K"
+        }
+       },
+       {
+        "name": "Half",
+        "stream_values": {
+         "Tin": "10",
+         "Tout": "10.25",
+         "CP": "1"
+        }
+       },
+       {
+        "name": "Empty",
+        "stream_values": {}
+       }
+      ],
+      "children": [
+       {
+        "name": "Fan",
+        "lat": 51.71,
+        "lon": 8.78,
+        "streams": [
+         {
+          "name": "Motor",
+          "stream_values": {
+           "Tin": "80",
+           "Tout": "30",
+           "ṁ": "0.5",
+           "cp": "4.18"
+          }
+         }
+        ]
+       },
+       {
+        "name": "Bare",
+        "extra_info": {
+         "notes": "child note"
+        }
+       }
+      ]
+     },
+     {
+      "name": "Idle",
+      "lat": "",
+      "lon": ""
+     },
+     {
+      "name": "Legacy",
+      "lat": "51.705",
+      "lon": "8.775",
+      "streams": [
+       {
+        "name": "Old",
+        "properties": {
+         "prop1": "Tin",
+         "prop2": "Tout",
+         "prop3": "ṁ",
+         "prop4": "cp"
+        },
+        "values": {
+         "val1": "150",
+         "val2": "60",
+         "val3": "2",
+         "val4": "2.1"
+        }
+       },
+       {
+        "name": "Tiny",
+        "stream_values": {
+         "Tin": "0.0000001",
+         "Tout": "1e-7",
+         "CP": "123456789012345678901234"
+        }
+       }
+      ]
+     },
+     {
+      "name": "Orphan",
+      "lat": 52,
+      "lon": 9
+     }
+    ],
+    "proc_groups": [
+     [
+      0,
+      1
+     ],
+     [
+      2
+     ],
+     [
+      7
+     ]
+    ],
+    "proc_group_names": [
+     "Hall A",
+     ""
+    ],
+    "proc_group_coordinates": {
+     "0": {
+      "lat": 51.7084,
+      "lon": 8.76945,
+      "hours": "8000"
+     },
+     "1": {
+      "lat": "",
+      "lon": null,
+      "hours": ""
+     }
+    }
+   },
+   "csv": "\"Name\";\"Heat Capacity\";\"Mass Flow\";\"CP-Value [kW/K]\";\"Input Temperature [°C]\";\"Output Temperature [°C]\";\"Stream Type\";\"Process\";\"Subprocess\";\"Q (kW)\";\"Lat\";\"Lon\";\"Hours\";\"Water In\";\"Water Out\";\"Density\";\"Pressure\";\"Notes\"\n\"Hall A_Dryer_Exhaust\";\"1.005\";\"1\";\"1.005\";\"120\";\"40\";\"hot\";\"Hall A\";\"Dryer\";\"80.4\";\"51.7084\";\"8.76945\";\"6000\";\"0.05\";\"\";\"1.2\";\"1\";\"main line\"\n\"Hall A_Dryer_Water\";\"\";\"\";\"12.5\";\"20\";\"80\";\"cold\";\"Hall A\";\"Dryer\";\"750.0\";\"51.7084\";\"8.76945\";\"6000\";\"0.3\";\"\";\"1.2\";\"\";\"main line\"\n\"Hall A_Dryer_Half\";\"\";\"\";\"1\";\"10\";\"10.25\";\"cold\";\"Hall A\";\"Dryer\";\"0.3\";\"51.7084\";\"8.76945\";\"6000\";\"0.3\";\"\";\"1.2\";\"\";\"main line\"\n\"Hall A_Dryer_Empty\";\"\";\"\";\"\";\"\";\"\";\"\";\"Hall A\";\"Dryer\";\"\";\"51.7084\";\"8.76945\";\"6000\";\"0.3\";\"\";\"1.2\";\"\";\"main line\"\n\"Hall A_Dryer › Fan_Motor\";\"4.18\";\"0.5\";\"2.09\";\"80\";\"30\";\"hot\";\"Hall A\";\"Dryer › Fan\";\"104.5\";\"51.7084\";\"8.76945\";\"6000\";\"0.3\";\"\";\"1.2\";\"\";\"main line\"\n\"\";\"\";\"\";\"\";\"\";\"\";\"\";\"Hall A\";\"Dryer › Bare\";\"\";\"51.7084\";\"8.76945\";\"6000\";\"0.3\";\"\";\"1.2\";\"\";\"child note\"\n\"\";\"\";\"\";\"\";\"\";\"\";\"\";\"Hall A\";\"Idle\";\"\";\"51.7084\";\"8.76945\";\"8000\";\"\";\"\";\"\";\"\";\"\"\n\"Process 2_Legacy_Old\";\"2.1\";\"2\";\"4.2\";\"150\";\"60\";\"hot\";\"Process 2\";\"Legacy\";\"378.0\";\"51.705\";\"8.775\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 2_Legacy_Tiny\";\"\";\"\";\"1.2345678901234569e+23\";\"1e-7\";\"1e-7\";\"cold\";\"Process 2\";\"Legacy\";\"\";\"51.705\";\"8.775\";\"\";\"\";\"\";\"\";\"\";\"\"",
+   "manhattan": "\"Process Name\";\"Hall A › Dryer\";\"Hall A › Dryer › Fan\";\"Hall A › Dryer › Bare\";\"Hall A › Idle\";\"Process 2 › Legacy\"\n\"Hall A › Dryer\";\"0\";\"1801\";\"0\";\"972\";\"901\"\n\"Hall A › Dryer › Fan\";\"1801\";\"0\";\"1801\";\"905\";\"901\"\n\"Hall A › Dryer › Bare\";\"0\";\"1801\";\"0\";\"972\";\"901\"\n\"Hall A › Idle\";\"972\";\"905\";\"972\";\"0\";\"761\"\n\"Process 2 › Legacy\";\"901\";\"900\";\"901\";\"760\";\"0\"",
+   "euclidean": "\"Process Name\";\"Hall A › Dryer\";\"Hall A › Dryer › Fan\";\"Hall A › Dryer › Bare\";\"Hall A › Idle\";\"Process 2 › Legacy\"\n\"Hall A › Dryer\";\"0\";\"1308\";\"0\";\"935\";\"654\"\n\"Hall A › Dryer › Fan\";\"1308\";\"0\";\"1308\";\"748\";\"654\"\n\"Hall A › Dryer › Bare\";\"0\";\"1308\";\"0\";\"935\";\"654\"\n\"Hall A › Idle\";\"935\";\"748\";\"935\";\"0\";\"538\"\n\"Process 2 › Legacy\";\"654\";\"654\";\"654\";\"538\";\"0\""
+  },
+  "edge_plan": {
+   "project": {
+    "processes": [
+     {
+      "name": "Dryer",
+      "lat": 51.7,
+      "lon": 8.77,
+      "hours": "6000",
+      "extra_info": {
+       "notes": "main line",
+       "water_content_in": "0.3",
+       "density": "1.2"
+      },
+      "streams": [
+       {
+        "name": "Exhaust",
+        "type": "air",
+        "stream_values": {
+         "Tin": "120",
+         "Tout": "40",
+         "ṁ": "3600",
+         "cp": "1005",
+         "Water Content In": "0.05",
+         "Pressure": "1"
+        },
+        "stream_units": {
+         "ṁ": "kg/h",
+         "cp": "J/(kg·K)"
+        }
+       },
+       {
+        "name": "Water",
+        "stream_values": {
+         "Tin": "293.15",
+         "Tout": "353.15",
+         "CP": "12500"
+        },
+        "stream_units": {
+         "Tin": "K",
+         "Tout": "K",
+         "CP": "W/K"
+        }
+       },
+       {
+        "name": "Half",
+        "stream_values": {
+         "Tin": "10",
+         "Tout": "10.25",
+         "CP": "1"
+        }
+       },
+       {
+        "name": "Empty",
+        "stream_values": {}
+       }
+      ],
+      "children": [
+       {
+        "name": "Fan",
+        "lat": 51.71,
+        "lon": 8.78,
+        "streams": [
+         {
+          "name": "Motor",
+          "stream_values": {
+           "Tin": "80",
+           "Tout": "30",
+           "ṁ": "0.5",
+           "cp": "4.18"
+          }
+         }
+        ]
+       },
+       {
+        "name": "Bare",
+        "extra_info": {
+         "notes": "child note"
+        }
+       }
+      ]
+     },
+     {
+      "name": "Idle",
+      "lat": "",
+      "lon": ""
+     },
+     {
+      "name": "Legacy",
+      "lat": "51.705",
+      "lon": "8.775",
+      "streams": [
+       {
+        "name": "Old",
+        "properties": {
+         "prop1": "Tin",
+         "prop2": "Tout",
+         "prop3": "ṁ",
+         "prop4": "cp"
+        },
+        "values": {
+         "val1": "150",
+         "val2": "60",
+         "val3": "2",
+         "val4": "2.1"
+        }
+       },
+       {
+        "name": "Tiny",
+        "stream_values": {
+         "Tin": "0.0000001",
+         "Tout": "1e-7",
+         "CP": "123456789012345678901234"
+        }
+       }
+      ]
+     },
+     {
+      "name": "Orphan",
+      "lat": 52,
+      "lon": 9
+     }
+    ],
+    "proc_groups": [
+     [
+      0,
+      1
+     ],
+     [
+      2
+     ],
+     [
+      7
+     ]
+    ],
+    "proc_group_names": [
+     "Hall A",
+     ""
+    ],
+    "proc_group_coordinates": {
+     "0": {
+      "lat": 51.7084,
+      "lon": 8.76945,
+      "hours": "8000"
+     },
+     "1": {
+      "lat": "",
+      "lon": null,
+      "hours": ""
+     }
+    },
+    "site_plan": {
+     "url": "x",
+     "bounds": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       1
+      ]
+     ]
+    }
+   },
+   "csv": "\"Name\";\"Heat Capacity\";\"Mass Flow\";\"CP-Value [kW/K]\";\"Input Temperature [°C]\";\"Output Temperature [°C]\";\"Stream Type\";\"Process\";\"Subprocess\";\"Q (kW)\";\"Hours\";\"Water In\";\"Water Out\";\"Density\";\"Pressure\";\"Notes\"\n\"Hall A_Dryer_Exhaust\";\"1.005\";\"1\";\"1.005\";\"120\";\"40\";\"hot\";\"Hall A\";\"Dryer\";\"80.4\";\"6000\";\"0.05\";\"\";\"1.2\";\"1\";\"main line\"\n\"Hall A_Dryer_Water\";\"\";\"\";\"12.5\";\"20\";\"80\";\"cold\";\"Hall A\";\"Dryer\";\"750.0\";\"6000\";\"0.3\";\"\";\"1.2\";\"\";\"main line\"\n\"Hall A_Dryer_Half\";\"\";\"\";\"1\";\"10\";\"10.25\";\"cold\";\"Hall A\";\"Dryer\";\"0.3\";\"6000\";\"0.3\";\"\";\"1.2\";\"\";\"main line\"\n\"Hall A_Dryer_Empty\";\"\";\"\";\"\";\"\";\"\";\"\";\"Hall A\";\"Dryer\";\"\";\"6000\";\"0.3\";\"\";\"1.2\";\"\";\"main line\"\n\"Hall A_Dryer › Fan_Motor\";\"4.18\";\"0.5\";\"2.09\";\"80\";\"30\";\"hot\";\"Hall A\";\"Dryer › Fan\";\"104.5\";\"6000\";\"0.3\";\"\";\"1.2\";\"\";\"main line\"\n\"\";\"\";\"\";\"\";\"\";\"\";\"\";\"Hall A\";\"Dryer › Bare\";\"\";\"6000\";\"0.3\";\"\";\"1.2\";\"\";\"child note\"\n\"\";\"\";\"\";\"\";\"\";\"\";\"\";\"Hall A\";\"Idle\";\"\";\"8000\";\"\";\"\";\"\";\"\";\"\"\n\"Process 2_Legacy_Old\";\"2.1\";\"2\";\"4.2\";\"150\";\"60\";\"hot\";\"Process 2\";\"Legacy\";\"378.0\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 2_Legacy_Tiny\";\"\";\"\";\"1.2345678901234569e+23\";\"1e-7\";\"1e-7\";\"cold\";\"Process 2\";\"Legacy\";\"\";\"\";\"\";\"\";\"\";\"\";\"\"",
+   "manhattan": "\"Process Name\";\"Hall A › Dryer\";\"Hall A › Dryer › Fan\";\"Hall A › Dryer › Bare\";\"Hall A › Idle\";\"Process 2 › Legacy\"\n\"Hall A › Dryer\";\"0\";\"1801\";\"0\";\"972\";\"901\"\n\"Hall A › Dryer › Fan\";\"1801\";\"0\";\"1801\";\"905\";\"901\"\n\"Hall A › Dryer › Bare\";\"0\";\"1801\";\"0\";\"972\";\"901\"\n\"Hall A › Idle\";\"972\";\"905\";\"972\";\"0\";\"761\"\n\"Process 2 › Legacy\";\"901\";\"900\";\"901\";\"760\";\"0\"",
+   "euclidean": "\"Process Name\";\"Hall A › Dryer\";\"Hall A › Dryer › Fan\";\"Hall A › Dryer › Bare\";\"Hall A › Idle\";\"Process 2 › Legacy\"\n\"Hall A › Dryer\";\"0\";\"1308\";\"0\";\"935\";\"654\"\n\"Hall A › Dryer › Fan\";\"1308\";\"0\";\"1308\";\"748\";\"654\"\n\"Hall A › Dryer › Bare\";\"0\";\"1308\";\"0\";\"935\";\"654\"\n\"Hall A › Idle\";\"935\";\"748\";\"935\";\"0\";\"538\"\n\"Process 2 › Legacy\";\"654\";\"654\";\"654\";\"538\";\"0\""
+  }
+ },
+ "examples": {
+  "heat_integration_example_1.json": {
+   "csv": "\"Name\";\"Heat Capacity\";\"Mass Flow\";\"CP-Value [kW/K]\";\"Input Temperature [°C]\";\"Output Temperature [°C]\";\"Stream Type\";\"Process\";\"Subprocess\";\"Q (kW)\";\"Lat\";\"Lon\";\"Hours\";\"Water In\";\"Water Out\";\"Density\";\"Pressure\";\"Notes\"\n\"Process 1_Subprocess 1_Wärmequelle 1\";\"2\";\"20\";\"40\";\"103\";\"43\";\"hot\";\"Process 1\";\"Subprocess 1\";\"2400.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 1_Wärmequelle 2\";\"3\";\"5\";\"15\";\"43\";\"23\";\"hot\";\"Process 1\";\"Subprocess 1\";\"300.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 2_Wärmequelle 3\";\"3\";\"5\";\"15\";\"128\";\"103\";\"hot\";\"Process 1\";\"Subprocess 2\";\"375.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 3_Wärmesenke 1\";\"3\";\"10\";\"30\";\"88\";\"113\";\"cold\";\"Process 1\";\"Subprocess 3\";\"750.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 3_Wärmesenke 2\";\"5\";\"10\";\"50\";\"68\";\"88\";\"cold\";\"Process 1\";\"Subprocess 3\";\"1000.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 4_Wärmesenke 3\";\"2\";\"10\";\"20\";\"8\";\"68\";\"cold\";\"Process 1\";\"Subprocess 4\";\"1200.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"",
+   "manhattan": "\"Process Name\";\"Process 1 › Subprocess 1\";\"Process 1 › Subprocess 2\";\"Process 1 › Subprocess 3\";\"Process 1 › Subprocess 4\"\n\"Process 1 › Subprocess 1\";\"0\";\"192\";\"356\";\"534\"\n\"Process 1 › Subprocess 2\";\"192\";\"0\";\"194\";\"372\"\n\"Process 1 › Subprocess 3\";\"356\";\"194\";\"0\";\"178\"\n\"Process 1 › Subprocess 4\";\"534\";\"372\";\"178\";\"0\"",
+   "euclidean": "\"Process Name\";\"Process 1 › Subprocess 1\";\"Process 1 › Subprocess 2\";\"Process 1 › Subprocess 3\";\"Process 1 › Subprocess 4\"\n\"Process 1 › Subprocess 1\";\"0\";\"178\";\"356\";\"534\"\n\"Process 1 › Subprocess 2\";\"178\";\"0\";\"179\";\"357\"\n\"Process 1 › Subprocess 3\";\"356\";\"179\";\"0\";\"178\"\n\"Process 1 › Subprocess 4\";\"534\";\"357\";\"178\";\"0\""
+  },
+  "heat_integration_example_2.json": {
+   "csv": "\"Name\";\"Heat Capacity\";\"Mass Flow\";\"CP-Value [kW/K]\";\"Input Temperature [°C]\";\"Output Temperature [°C]\";\"Stream Type\";\"Process\";\"Subprocess\";\"Q (kW)\";\"Lat\";\"Lon\";\"Hours\";\"Water In\";\"Water Out\";\"Density\";\"Pressure\";\"Notes\"\n\"Process 1_Subprocess 1_Steam Subprocess 1 s2\";\"2\";\"20\";\"40\";\"103\";\"43\";\"hot\";\"Process 1\";\"Subprocess 1\";\"2400.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 1_Product Subprocess 1 s1\";\"3\";\"5\";\"15\";\"43\";\"23\";\"hot\";\"Process 1\";\"Subprocess 1\";\"300.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 2_Product subprocess 4 s3\";\"3\";\"5\";\"15\";\"128\";\"103\";\"hot\";\"Process 1\";\"Subprocess 2\";\"375.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 3_Utility subprocess 5 S4\";\"3\";\"10\";\"30\";\"88\";\"113\";\"cold\";\"Process 1\";\"Subprocess 3\";\"750.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 3_Product Subprocess 1\";\"5\";\"10\";\"50\";\"68\";\"88\";\"cold\";\"Process 1\";\"Subprocess 3\";\"1000.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 4_subprocess  6 product 6\";\"2\";\"10\";\"20\";\"8\";\"68\";\"cold\";\"Process 1\";\"Subprocess 4\";\"1200.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"",
+   "manhattan": "\"Process Name\";\"Process 1 › Subprocess 1\";\"Process 1 › Subprocess 2\";\"Process 1 › Subprocess 3\";\"Process 1 › Subprocess 4\"\n\"Process 1 › Subprocess 1\";\"0\";\"74\";\"150\";\"265\"\n\"Process 1 › Subprocess 2\";\"74\";\"0\";\"157\";\"272\"\n\"Process 1 › Subprocess 3\";\"150\";\"157\";\"0\";\"115\"\n\"Process 1 › Subprocess 4\";\"265\";\"272\";\"115\";\"0\"",
+   "euclidean": "\"Process Name\";\"Process 1 › Subprocess 1\";\"Process 1 › Subprocess 2\";\"Process 1 › Subprocess 3\";\"Process 1 › Subprocess 4\"\n\"Process 1 › Subprocess 1\";\"0\";\"74\";\"122\";\"234\"\n\"Process 1 › Subprocess 2\";\"74\";\"0\";\"124\";\"235\"\n\"Process 1 › Subprocess 3\";\"122\";\"124\";\"0\";\"115\"\n\"Process 1 › Subprocess 4\";\"234\";\"235\";\"115\";\"0\""
+  },
+  "heat_integration_example_3.json": {
+   "csv": "\"Name\";\"Heat Capacity\";\"Mass Flow\";\"CP-Value [kW/K]\";\"Input Temperature [°C]\";\"Output Temperature [°C]\";\"Stream Type\";\"Process\";\"Subprocess\";\"Q (kW)\";\"Lat\";\"Lon\";\"Hours\";\"Water In\";\"Water Out\";\"Density\";\"Pressure\";\"Notes\"\n\"Process 1_Subprocess 1_Steam Subprocess 1 s2\";\"2\";\"20\";\"40\";\"103\";\"43\";\"hot\";\"Process 1\";\"Subprocess 1\";\"2400.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 1_Product Subprocess 1 s1\";\"3\";\"5\";\"15\";\"43\";\"23\";\"hot\";\"Process 1\";\"Subprocess 1\";\"300.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 2_Product subprocess 4 s3\";\"3\";\"5\";\"15\";\"128\";\"103\";\"hot\";\"Process 1\";\"Subprocess 2\";\"375.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 3_Utility subprocess 5 S4\";\"3\";\"10\";\"30\";\"88\";\"113\";\"cold\";\"Process 1\";\"Subprocess 3\";\"750.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 3_Product Subprocess 1\";\"5\";\"10\";\"50\";\"68\";\"88\";\"cold\";\"Process 1\";\"Subprocess 3\";\"1000.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 4_subprocess  6 product 6\";\"2\";\"10\";\"20\";\"8\";\"68\";\"cold\";\"Process 1\";\"Subprocess 4\";\"1200.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"",
+   "manhattan": "\"Process Name\";\"Process 1 › Subprocess 1\";\"Process 1 › Subprocess 2\";\"Process 1 › Subprocess 3\";\"Process 1 › Subprocess 4\"\n\"Process 1 › Subprocess 1\";\"0\";\"78\";\"163\";\"249\"\n\"Process 1 › Subprocess 2\";\"78\";\"0\";\"86\";\"172\"\n\"Process 1 › Subprocess 3\";\"163\";\"86\";\"0\";\"86\"\n\"Process 1 › Subprocess 4\";\"249\";\"172\";\"86\";\"0\"",
+   "euclidean": "\"Process Name\";\"Process 1 › Subprocess 1\";\"Process 1 › Subprocess 2\";\"Process 1 › Subprocess 3\";\"Process 1 › Subprocess 4\"\n\"Process 1 › Subprocess 1\";\"0\";\"77\";\"162\";\"246\"\n\"Process 1 › Subprocess 2\";\"77\";\"0\";\"84\";\"169\"\n\"Process 1 › Subprocess 3\";\"162\";\"84\";\"0\";\"85\"\n\"Process 1 › Subprocess 4\";\"246\";\"169\";\"85\";\"0\""
+  },
+  "heat_integration_example_4.json": {
+   "csv": "\"Name\";\"Heat Capacity\";\"Mass Flow\";\"CP-Value [kW/K]\";\"Input Temperature [°C]\";\"Output Temperature [°C]\";\"Stream Type\";\"Process\";\"Subprocess\";\"Q (kW)\";\"Lat\";\"Lon\";\"Hours\";\"Water In\";\"Water Out\";\"Density\";\"Pressure\";\"Notes\"\n\"Process 1_Subprocess 1_Steam Subprocess 1 s2\";\"2\";\"20\";\"40\";\"103\";\"43\";\"hot\";\"Process 1\";\"Subprocess 1\";\"2400.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 1_Product Subprocess 1 s1\";\"3\";\"5\";\"15\";\"43\";\"23\";\"hot\";\"Process 1\";\"Subprocess 1\";\"300.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 2_Product subprocess 4 s3\";\"3\";\"5\";\"15\";\"128\";\"103\";\"hot\";\"Process 1\";\"Subprocess 2\";\"375.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 3_Utility subprocess 5 S4\";\"3\";\"10\";\"30\";\"88\";\"113\";\"cold\";\"Process 1\";\"Subprocess 3\";\"750.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 3_Product Subprocess 1\";\"5\";\"10\";\"50\";\"68\";\"88\";\"cold\";\"Process 1\";\"Subprocess 3\";\"1000.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"\n\"Process 1_Subprocess 4_subprocess  6 product 6\";\"2\";\"10\";\"20\";\"8\";\"68\";\"cold\";\"Process 1\";\"Subprocess 4\";\"1200.0\";\"51.7084\";\"8.76945\";\"\";\"\";\"\";\"\";\"\";\"\"",
+   "manhattan": "\"Process Name\";\"Process 1 › Subprocess 1\";\"Process 1 › Subprocess 2\";\"Process 1 › Subprocess 3\";\"Process 1 › Subprocess 4\"\n\"Process 1 › Subprocess 1\";\"0\";\"74\";\"150\";\"265\"\n\"Process 1 › Subprocess 2\";\"74\";\"0\";\"157\";\"272\"\n\"Process 1 › Subprocess 3\";\"150\";\"157\";\"0\";\"115\"\n\"Process 1 › Subprocess 4\";\"265\";\"272\";\"115\";\"0\"",
+   "euclidean": "\"Process Name\";\"Process 1 › Subprocess 1\";\"Process 1 › Subprocess 2\";\"Process 1 › Subprocess 3\";\"Process 1 › Subprocess 4\"\n\"Process 1 › Subprocess 1\";\"0\";\"74\";\"122\";\"234\"\n\"Process 1 › Subprocess 2\";\"74\";\"0\";\"124\";\"235\"\n\"Process 1 › Subprocess 3\";\"122\";\"124\";\"0\";\"115\"\n\"Process 1 › Subprocess 4\";\"234\";\"235\";\"115\";\"0\""
+  }
+ }
+}

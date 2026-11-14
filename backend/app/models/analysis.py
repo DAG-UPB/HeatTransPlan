@@ -4,9 +4,10 @@ Analysis request/response models for pinch analysis, HPI, and status quo compari
 
 from __future__ import annotations
 from typing import Any, Dict, List, Literal, Optional, Union
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 from app.models.cop_training import CustomCopModelSpec
+from app.services import pinch_figures
 
 
 # How much internal heat recovery is credited before the heat pump is placed.
@@ -57,6 +58,29 @@ class PinchResult(BaseModel):
     grand_composite_curve: Dict[str, List[float]] = Field(default_factory=lambda: {"H": [], "T": []})
     # Stream info for labelling charts
     streams_data: List[Dict[str, Any]] = Field(default_factory=list)
+
+    # Derived from the fields above (app/services/pinch_figures.py), sent with
+    # every answer so the page only shows them. Recomputed, never read from a
+    # request: a pinch result sent back cannot bring other values.
+    @computed_field
+    @property
+    def total_hot_duty(self) -> float:
+        """Heat the hot streams give off, kW."""
+        return pinch_figures.total_hot_duty(self.streams_data)
+
+    @computed_field
+    @property
+    def max_heat_recovery(self) -> float:
+        """Heat recovered between streams at full recovery, kW."""
+        return pinch_figures.max_heat_recovery(self.streams_data, self.cold_utility)
+
+    @computed_field
+    @property
+    def gcc_pockets(self) -> Dict[str, Any]:
+        """Pockets of the grand composite curve: polygons x, y (None between
+        pockets) and the heat exchanged inside them, kW."""
+        gcc = self.grand_composite_curve
+        return pinch_figures.gcc_pockets(gcc.get("H", []), gcc.get("T", []), self.pinch_temperature)
 
 
 # ---------------------------------------------------------------------------
@@ -251,6 +275,25 @@ class CopFormulaValidateRequest(BaseModel):
     T_sink: float = 110.0
 
 
+class CopPointProfile(BaseModel):
+    """A source or sink profile: duty H (kW) over temperature T (°C, ascending)."""
+    H: List[float] = Field(default_factory=list, max_length=100_000)
+    T: List[float] = Field(default_factory=list, max_length=100_000)
+
+
+class CopPointBalance(BaseModel):
+    #: Waste heat the pump draws for the whole sink duty: Q_sink·(COP−1)/COP.
+    needed: float
+    #: Electricity: Q_sink / COP.
+    p_el: float
+    #: Waste heat available − needed.
+    gap: float
+    #: balanced (within 1 %, at least 1 kW), source_limited or demand_limited.
+    state: str
+    #: Sink duty the available waste heat can carry.
+    q_sink_possible: float
+
+
 class CopPointRequest(BaseModel):
     """One operating point to rate: a trained heat pump and its four
     temperatures (°C, on the shifted scale the optimization uses)."""
@@ -262,6 +305,15 @@ class CopPointRequest(BaseModel):
     T_sink_out: float
     # ΔTmin of the pinch: Carnot reads the real temperatures, ΔTmin/2 off these.
     delta_t_min: float = Field(0.0, ge=0)
+    # The optimization's profiles (pocketless_source / pocketless_sink of its
+    # result) and where on them the point stands: with these the answer also
+    # carries the balance of waste heat and demand (app/services/optimization/balance.py).
+    source_profile: Optional[CopPointProfile] = None
+    sink_profile: Optional[CopPointProfile] = None
+    T_source_profile: Optional[float] = None
+    T_sink_profile: Optional[float] = None
+    # Sink duty where the sink profile has no points.
+    q_sink_default: Optional[float] = None
 
 
 class CopPointCheck(BaseModel):
@@ -280,6 +332,11 @@ class CopPointResult(BaseModel):
     carnot_50: Optional[float] = None
     carnot_ideal: Optional[float] = None
     checks: List[CopPointCheck] = Field(default_factory=list)
+    # With the profiles in the request: the demand off the sink profile, the
+    # waste heat off the source profile, and their balance at cop_2t.
+    q_sink: Optional[float] = None
+    q_available: Optional[float] = None
+    balance: Optional[CopPointBalance] = None
 
 
 class CopFormulaValidateResult(BaseModel):

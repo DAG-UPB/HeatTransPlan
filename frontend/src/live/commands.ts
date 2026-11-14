@@ -10,17 +10,10 @@ import { useAnalysisStore } from '../store/analysisStore';
 import { useProjectStore } from '../store/projectStore';
 import { loadProject } from '../store/loadProject';
 import { useUIStore } from '../store/uiStore';
-import {
-  DEFAULTS as ECON_DEFAULTS,
-  PRESETS as ECON_PRESETS,
-  type RefType,
-} from '../components/analysis/econConfig';
+import { FORM_KEYS, REF_TYPES, type RefType } from '../components/analysis/econConfig';
+import { loadEconDefaults } from '../api/analysis';
 import { distanceCsv, projectCsv } from '../utils/csvExport';
-import type {
-  CopFormulaSpec,
-  OptimizedIntegrationPoint,
-  ProfileMode,
-} from '../types/analysis';
+import type { CopFormulaSpec, OptimizedIntegrationPoint, ProfileMode } from '../types/analysis';
 import type { ProjectState } from '../types/project';
 import type { CustomCopModelSpec } from '../types/copTraining';
 import { buildView } from './view';
@@ -372,21 +365,25 @@ const BUILT_IN: Record<string, Handler> = {
   },
 
   // ── Economics ───────────────────────────────────────────────────────────
-  set_economics: (args) => {
+  set_economics: async (args) => {
     const s = analysis();
     const refType = (args.ref_type as RefType | undefined) ?? s.econRefType;
-    if (!['gas', 'oil', 'eboiler'].includes(refType))
+    if (!REF_TYPES.includes(refType))
       throw new CommandError('ref_type must be "gas", "oil" or "eboiler"');
     const patch = (args.form as Record<string, number> | undefined) ?? {};
     for (const k of Object.keys(patch))
-      if (!(k in ECON_DEFAULTS)) throw new CommandError(`Unknown economics input "${k}"`);
+      if (!(FORM_KEYS as readonly string[]).includes(k))
+        throw new CommandError(`Unknown economics input "${k}"`);
+    // The backend's defaults and presets (asked once).
+    const defaults = await loadEconDefaults();
     // Picking a heater on the page brings its efficiency, price and CO2 factor.
-    const preset = refType !== s.econRefType ? ECON_PRESETS[refType] : {};
-    s.setEcon({ ...s.econForm, ...preset, ...patch }, refType);
+    const preset = refType !== analysis().econRefType ? defaults.presets[refType] : {};
+    const form = analysis().econForm ?? defaults.form;
+    analysis().setEcon({ ...form, ...preset, ...patch }, refType);
     return { form: analysis().econForm, ref_type: analysis().econRefType };
   },
-  reset_economics: () => {
-    analysis().setEcon(ECON_DEFAULTS, 'gas');
+  reset_economics: async () => {
+    analysis().setEcon({ ...(await loadEconDefaults()).form }, 'gas');
     return { ok: true };
   },
 

@@ -1,0 +1,406 @@
+[
+ {
+  "example": "heat_integration_example_1.json",
+  "selection": {
+   "stream_0_0": true,
+   "stream_0_1": true,
+   "stream_1_0": true,
+   "stream_2_0": true,
+   "stream_2_1": true,
+   "stream_3_0": true
+  },
+  "streams": [
+   {
+    "name": "Subprocess 1 - Wärmequelle 1",
+    "CP": 40.0,
+    "Tin": 103.0,
+    "Tout": 43.0,
+    "Q": 2400.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 1 - Wärmequelle 2",
+    "CP": 15.0,
+    "Tin": 43.0,
+    "Tout": 23.0,
+    "Q": 300.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 2 - Wärmequelle 3",
+    "CP": 15.0,
+    "Tin": 128.0,
+    "Tout": 103.0,
+    "Q": 375.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 3 - Wärmesenke 1",
+    "CP": 30.0,
+    "Tin": 88.0,
+    "Tout": 113.0,
+    "Q": 750.0,
+    "type": "Cold"
+   },
+   {
+    "name": "Subprocess 3 - Wärmesenke 2",
+    "CP": 50.0,
+    "Tin": 68.0,
+    "Tout": 88.0,
+    "Q": 1000.0,
+    "type": "Cold"
+   },
+   {
+    "name": "Subprocess 4 - Wärmesenke 3",
+    "CP": 20.0,
+    "Tin": 8.0,
+    "Tout": 68.0,
+    "Q": 1200.0,
+    "type": "Cold"
+   }
+  ]
+ },
+ {
+  "example": "heat_integration_example_1.json",
+  "selection": {
+   "stream_0_0": true,
+   "stream_0_1": true,
+   "stream_1_0": true,
+   "stream_2_0": false,
+   "stream_0_99": true,
+   "stream_99_0": true,
+   "stream_x_1": true,
+   "stream_-1_0": true,
+   "other": true
+  },
+  "streams": [
+   {
+    "name": "Subprocess 1 - Wärmequelle 1",
+    "CP": 40.0,
+    "Tin": 103.0,
+    "Tout": 43.0,
+    "Q": 2400.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 1 - Wärmequelle 2",
+    "CP": 15.0,
+    "Tin": 43.0,
+    "Tout": 23.0,
+    "Q": 300.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 2 - Wärmequelle 3",
+    "CP": 15.0,
+    "Tin": 128.0,
+    "Tout": 103.0,
+    "Q": 375.0,
+    "type": "Hot"
+   }
+  ]
+ },
+ {
+  "example": "heat_integration_example_2.json",
+  "selection": {
+   "stream_0_0": true,
+   "stream_0_1": true,
+   "stream_1_0": true,
+   "stream_2_0": true,
+   "stream_2_1": true,
+   "stream_3_0": true
+  },
+  "streams": [
+   {
+    "name": "Subprocess 1 - Steam Subprocess 1 s2",
+    "CP": 40.0,
+    "Tin": 103.0,
+    "Tout": 43.0,
+    "Q": 2400.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 1 - Product Subprocess 1 s1",
+    "CP": 15.0,
+    "Tin": 43.0,
+    "Tout": 23.0,
+    "Q": 300.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 2 - Product subprocess 4 s3",
+    "CP": 15.0,
+    "Tin": 128.0,
+    "Tout": 103.0,
+    "Q": 375.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 3 - Utility subprocess 5 S4",
+    "CP": 30.0,
+    "Tin": 88.0,
+    "Tout": 113.0,
+    "Q": 750.0,
+    "type": "Cold"
+   },
+   {
+    "name": "Subprocess 3 - Product Subprocess 1",
+    "CP": 50.0,
+    "Tin": 68.0,
+    "Tout": 88.0,
+    "Q": 1000.0,
+    "type": "Cold"
+   },
+   {
+    "name": "Subprocess 4 - subprocess  6 product 6",
+    "CP": 20.0,
+    "Tin": 8.0,
+    "Tout": 68.0,
+    "Q": 1200.0,
+    "type": "Cold"
+   }
+  ]
+ },
+ {
+  "example": "heat_integration_example_2.json",
+  "selection": {
+   "stream_0_0": true,
+   "stream_0_1": true,
+   "stream_1_0": true,
+   "stream_2_0": false,
+   "stream_0_99": true,
+   "stream_99_0": true,
+   "stream_x_1": true,
+   "stream_-1_0": true,
+   "other": true
+  },
+  "streams": [
+   {
+    "name": "Subprocess 1 - Steam Subprocess 1 s2",
+    "CP": 40.0,
+    "Tin": 103.0,
+    "Tout": 43.0,
+    "Q": 2400.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 1 - Product Subprocess 1 s1",
+    "CP": 15.0,
+    "Tin": 43.0,
+    "Tout": 23.0,
+    "Q": 300.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 2 - Product subprocess 4 s3",
+    "CP": 15.0,
+    "Tin": 128.0,
+    "Tout": 103.0,
+    "Q": 375.0,
+    "type": "Hot"
+   }
+  ]
+ },
+ {
+  "example": "heat_integration_example_3.json",
+  "selection": {
+   "stream_0_0": true,
+   "stream_0_1": true,
+   "stream_1_0": true,
+   "stream_2_0": true,
+   "stream_2_1": true,
+   "stream_3_0": true
+  },
+  "streams": [
+   {
+    "name": "Subprocess 1 - Steam Subprocess 1 s2",
+    "CP": 40.0,
+    "Tin": 103.0,
+    "Tout": 43.0,
+    "Q": 2400.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 1 - Product Subprocess 1 s1",
+    "CP": 15.0,
+    "Tin": 43.0,
+    "Tout": 23.0,
+    "Q": 300.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 2 - Product subprocess 4 s3",
+    "CP": 15.0,
+    "Tin": 128.0,
+    "Tout": 103.0,
+    "Q": 375.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 3 - Utility subprocess 5 S4",
+    "CP": 30.0,
+    "Tin": 88.0,
+    "Tout": 113.0,
+    "Q": 750.0,
+    "type": "Cold"
+   },
+   {
+    "name": "Subprocess 3 - Product Subprocess 1",
+    "CP": 50.0,
+    "Tin": 68.0,
+    "Tout": 88.0,
+    "Q": 1000.0,
+    "type": "Cold"
+   },
+   {
+    "name": "Subprocess 4 - subprocess  6 product 6",
+    "CP": 20.0,
+    "Tin": 8.0,
+    "Tout": 68.0,
+    "Q": 1200.0,
+    "type": "Cold"
+   }
+  ]
+ },
+ {
+  "example": "heat_integration_example_3.json",
+  "selection": {
+   "stream_0_0": true,
+   "stream_0_1": true,
+   "stream_1_0": true,
+   "stream_2_0": false,
+   "stream_0_99": true,
+   "stream_99_0": true,
+   "stream_x_1": true,
+   "stream_-1_0": true,
+   "other": true
+  },
+  "streams": [
+   {
+    "name": "Subprocess 1 - Steam Subprocess 1 s2",
+    "CP": 40.0,
+    "Tin": 103.0,
+    "Tout": 43.0,
+    "Q": 2400.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 1 - Product Subprocess 1 s1",
+    "CP": 15.0,
+    "Tin": 43.0,
+    "Tout": 23.0,
+    "Q": 300.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 2 - Product subprocess 4 s3",
+    "CP": 15.0,
+    "Tin": 128.0,
+    "Tout": 103.0,
+    "Q": 375.0,
+    "type": "Hot"
+   }
+  ]
+ },
+ {
+  "example": "heat_integration_example_4.json",
+  "selection": {
+   "stream_0_0": true,
+   "stream_0_1": true,
+   "stream_1_0": true,
+   "stream_2_0": true,
+   "stream_2_1": true,
+   "stream_3_0": true
+  },
+  "streams": [
+   {
+    "name": "Subprocess 1 - Steam Subprocess 1 s2",
+    "CP": 40.0,
+    "Tin": 103.0,
+    "Tout": 43.0,
+    "Q": 2400.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 1 - Product Subprocess 1 s1",
+    "CP": 15.0,
+    "Tin": 43.0,
+    "Tout": 23.0,
+    "Q": 300.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 2 - Product subprocess 4 s3",
+    "CP": 15.0,
+    "Tin": 128.0,
+    "Tout": 103.0,
+    "Q": 375.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 3 - Utility subprocess 5 S4",
+    "CP": 30.0,
+    "Tin": 88.0,
+    "Tout": 113.0,
+    "Q": 750.0,
+    "type": "Cold"
+   },
+   {
+    "name": "Subprocess 3 - Product Subprocess 1",
+    "CP": 50.0,
+    "Tin": 68.0,
+    "Tout": 88.0,
+    "Q": 1000.0,
+    "type": "Cold"
+   },
+   {
+    "name": "Subprocess 4 - subprocess  6 product 6",
+    "CP": 20.0,
+    "Tin": 8.0,
+    "Tout": 68.0,
+    "Q": 1200.0,
+    "type": "Cold"
+   }
+  ]
+ },
+ {
+  "example": "heat_integration_example_4.json",
+  "selection": {
+   "stream_0_0": true,
+   "stream_0_1": true,
+   "stream_1_0": true,
+   "stream_2_0": false,
+   "stream_0_99": true,
+   "stream_99_0": true,
+   "stream_x_1": true,
+   "stream_-1_0": true,
+   "other": true
+  },
+  "streams": [
+   {
+    "name": "Subprocess 1 - Steam Subprocess 1 s2",
+    "CP": 40.0,
+    "Tin": 103.0,
+    "Tout": 43.0,
+    "Q": 2400.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 1 - Product Subprocess 1 s1",
+    "CP": 15.0,
+    "Tin": 43.0,
+    "Tout": 23.0,
+    "Q": 300.0,
+    "type": "Hot"
+   },
+   {
+    "name": "Subprocess 2 - Product subprocess 4 s3",
+    "CP": 15.0,
+    "Tin": 128.0,
+    "Tout": 103.0,
+    "Q": 375.0,
+    "type": "Hot"
+   }
+  ]
+ }
+]

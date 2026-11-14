@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from app.models.analysis import PinchResult
+from app.services import pinch_figures
 
 
 def _prepare_xy_curve(x, y, is_source=False):
@@ -40,16 +41,11 @@ def _make_temperature_grid(T_min, T_max, step=1.0):
 def _unrecovered_heat(pinch: PinchResult, recovery_pct: float) -> float:
     """Heat not recovered at the given share of the maximum recovery, kW.
 
-    Maximum recovery = heat the hot streams give off − minimum cooling. Each kW
-    not recovered has to be heated in above the pinch and cooled away below
-    it, so it flows through the pinch: the whole GCC moves right by this much.
+    Each kW not recovered has to be heated in above the pinch and cooled away
+    below it, so it flows through the pinch: the whole GCC moves right by this
+    much (app/services/pinch_figures.py).
     """
-    hot_duty = sum(
-        abs(float(s["cp"]) * (float(s["tt"]) - float(s["ts"])))
-        for s in pinch.streams_data
-        if float(s["ts"]) > float(s["tt"])
-    )
-    return (1.0 - recovery_pct / 100.0) * max(hot_duty - float(pinch.cold_utility), 0.0)
+    return pinch_figures.unrecovered_heat(pinch, recovery_pct)
 
 
 def _shift(curve: dict, d: float) -> dict:

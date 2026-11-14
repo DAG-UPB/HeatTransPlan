@@ -4,6 +4,7 @@ import { useAnalysisStore } from '../../store/analysisStore';
 import ChartHelpButton from '../ui/ChartHelpButton';
 import { useTranslation } from 'react-i18next';
 import { usePinchLink, type LinkRegion } from '../../store/pinchLinkStore';
+import { atRecoveryShare } from './recoveryShare';
 
 // The chart area each card matches: hovering one lights up the others.
 const LINKED: Record<string, LinkRegion> = {
@@ -21,16 +22,12 @@ export default function PinchMetrics() {
   const setRegion = usePinchLink((s) => s.setRegion);
   if (!pinchResult) return null;
 
-  const totalHotDuty = pinchResult.streams_data
-    .filter((s) => s.ts > s.tt)
-    .reduce((sum, s) => sum + Math.abs(s.cp * (s.tt - s.ts)), 0);
-  // Heat not recovered at the chosen share: it has to be heated in and cooled
-  // away on top of the pinch minimums. At 0 % that is every stream's heat.
-  const d = (1 - recoveryPct / 100) * (totalHotDuty - pinchResult.cold_utility);
-  const heating = pinchResult.hot_utility + d;
-  const cooling = pinchResult.cold_utility + d;
-  // What the hot streams give off, less what still has to be cooled away.
-  const heatRecovery = totalHotDuty - cooling;
+  // The backend's figures at the chosen share of heat recovery.
+  const {
+    hot_utility: heating,
+    cold_utility: cooling,
+    heat_recovery: heatRecovery,
+  } = atRecoveryShare(pinchResult, recoveryPct);
 
   const cards = [
     {

@@ -15,6 +15,7 @@ import { PartBanner } from '../components/ui/Part';
 import CollectionHelp from '../components/ui/CollectionHelp';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { orphanProcesses, removeProcesses } from '../utils/processIndex';
+import { haversineDistance } from '../utils/geoUtils';
 
 export default function DataCollectionPage() {
   const { t } = useTranslation();
@@ -363,18 +364,11 @@ export default function DataCollectionPage() {
         const newPoints = [...measurePoints, [lat, lon] as [number, number]];
         setMeasurePoints(newPoints);
         if (newPoints.length === 2) {
-          // Haversine distance
+          // Straight distance, measured as the click goes (the exported
+          // distance matrix comes from the backend).
           const [lat1, lon1] = newPoints[0];
           const [lat2, lon2] = newPoints[1];
-          const R = 6371000;
-          const dLat = ((lat2 - lat1) * Math.PI) / 180;
-          const dLon = ((lon2 - lon1) * Math.PI) / 180;
-          const a =
-            Math.sin(dLat / 2) ** 2 +
-            Math.cos((lat1 * Math.PI) / 180) *
-              Math.cos((lat2 * Math.PI) / 180) *
-              Math.sin(dLon / 2) ** 2;
-          const d = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          const d = haversineDistance(lat1, lon1, lat2, lon2);
           const distStr = d >= 1000 ? `${(d / 1000).toFixed(2)} km` : `${d.toFixed(1)} m`;
           setMeasureResult(`Distance: ${distStr}`);
           setMeasureMode(false);

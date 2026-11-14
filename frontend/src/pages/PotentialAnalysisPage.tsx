@@ -15,7 +15,7 @@ import { useCallback, useEffect, useState, useRef, type ChangeEvent } from 'reac
 import { useProjectStore } from '../store/projectStore';
 import { loadProject } from '../store/loadProject';
 import { useAnalysisStore } from '../store/analysisStore';
-import { runEconomics, generateReport } from '../api/analysis';
+import { runEconomics, generateReport, loadEconDefaults } from '../api/analysis';
 import { getStreamInfo } from '../utils/streamUtils';
 
 import StreamSelector from '../components/analysis/StreamSelector';
@@ -158,31 +158,40 @@ export default function PotentialAnalysisPage() {
     URL.revokeObjectURL(url);
   }, [projectState]);
 
-  const handleLoadProject = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const data = JSON.parse(reader.result as string);
-        loadProject({ ...data, map_locked: true });
-      } catch {
-        alert(t('action_bar.invalid_file'));
-      }
-    };
-    reader.readAsText(file);
-    if (fileRef.current) fileRef.current.value = '';
-  }, [t]);
+  const handleLoadProject = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result as string);
+          loadProject({ ...data, map_locked: true });
+        } catch {
+          alert(t('action_bar.invalid_file'));
+        }
+      };
+      reader.readAsText(file);
+      if (fileRef.current) fileRef.current.value = '';
+    },
+    [t]
+  );
 
   const { streamsData, pinchError, getStreamsFromSelection } = useAnalysisPipeline();
 
   // Helper to build payload for report and map preview
   const buildReportPayload = useCallback(async () => {
-    const { econForm, econRefType, scenarios } = useAnalysisStore.getState();
+    // The inputs start from the backend's defaults; without them (server not
+    // reachable) the report goes without economics.
+    const defaults = await loadEconDefaults().catch(() => null);
+    const { econRefType, scenarios } = useAnalysisStore.getState();
+    const econForm = useAnalysisStore.getState().econForm ?? defaults?.form ?? null;
     // The economics of each scenario's pump, computed by the backend.
     const econNumbers = await Promise.all(
       (scenarios || []).map((sc) =>
-        runEconomics(econForm, econRefType, sc.selectedHPPoints || [], sc.hpiOptimizationResult)
+        econForm
+          ? runEconomics(econForm, econRefType, sc.selectedHPPoints || [], sc.hpiOptimizationResult)
+          : null
       )
     );
     return {
@@ -222,9 +231,10 @@ export default function PotentialAnalysisPage() {
             cooling_demand: d.cooling_demand,
           })) || [],
         t_min: sc.tMin,
+        recovery_pct: sc.recoveryPct ?? 100,
         // The economic analysis of this scenario's pump, with the inputs from
         // the Economic analysis section, translated and formatted here.
-        economics: econReportData(t, econForm, econRefType, econNumbers[k]),
+        economics: econForm ? econReportData(t, econForm, econRefType, econNumbers[k]) : null,
       })),
     };
   }, [
