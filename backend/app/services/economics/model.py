@@ -161,6 +161,12 @@ def econ_core(
     # The reference supplies the largest demand (and cools the largest source)
     # among the variants, so every pump is compared against the same Ist-Situation.
     real_feasible = [p for p in (opt.feasible_points if opt else []) if not p.theoretical and p.COP > 0]
+    # A theoretical pump (an archetype such as Carnot) is sized against its own
+    # kind: the size curve then runs over that archetype's points.
+    archetype_feasible = [
+        p for p in (opt.feasible_points if opt else [])
+        if pump.theoretical and p.theoretical and p.refrigerant == pump.refrigerant and p.COP > 0
+    ]
     ref_pool = [*points, *([opt.max_q_point] if opt and opt.max_q_point else []), *real_feasible]
     ref_sys = EconReference(
         Q=max(p.Q_demand_total if p.Q_demand_total is not None else p.Q_demand for p in ref_pool),
@@ -183,6 +189,7 @@ def econ_core(
         "points": points,
         "inp": inp,
         "realFeasible": real_feasible,
+        "archetypeFeasible": archetype_feasible,
         "refSys": ref_sys,
         "ref": ref,
         "specTotal": spec_total,
@@ -221,21 +228,18 @@ def sensitivity(core: Dict[str, Any], form: Dict[str, float], sens_base: Optiona
     return {"gasStep": gas_step, "gasCt": gas_ct, "elStep": el["step"], "elCt": el_ct, "z": z, "beX": be_x, "beY": be_y}
 
 
-def size_curve(core: Dict[str, Any]) -> Dict[str, Any]:
-    """Economic heat pump size: every working pump on the optimisation curve,
-    costed with the same inputs. Per size (1 % of the demand) the best machine
-    is kept, so the line is the best you can do at each size and its peak is
-    the economic optimum.
-
-    Only pumps on the profiles count, as on the optimization chart. A source-
-    limited pump covers only part of the demand above a high sink temperature
-    at a poor COP; on-profile pumps come in duty steps wider than 1 %, so one
-    landing in an empty step would be "the best of that size" and pull the
-    line down to a loss that no sensible choice of pump makes."""
+def _best_per_size(core: Dict[str, Any], pool: Sequence[OptimizedIntegrationPoint]) -> List[Dict[str, Any]]:
+    """Per size (1 % of the demand) the pump with the highest net present
+    value, by heat output. Only pumps on the profiles count when there are any,
+    as on the optimization chart: a source-limited pump covers only part of
+    the demand above a high sink temperature at a poor COP; on-profile pumps
+    come in duty steps wider than 1 %, so one landing in an empty step would be
+    "the best of that size" and pull the line down to a loss that no sensible
+    choice of pump makes."""
     inp, ref_sys, capex_of = core["inp"], core["refSys"], core["capexOf"]
     size_best: Dict[int, Dict[str, Any]] = {}
-    on_profile = [p for p in core["realFeasible"] if not p.source_limited and not p.demand_limited]
-    for p in on_profile or core["realFeasible"]:
+    on_profile = [p for p in pool if not p.source_limited and not p.demand_limited]
+    for p in on_profile or pool:
         npv = evaluate(
             inp, ref_sys, EconVariant(Q=p.Q_demand, Qsrc=p.Q_source, cop=p.COP, capex=capex_of(p)), with_irr=False
         )["npv"]
@@ -243,12 +247,37 @@ def size_curve(core: Dict[str, Any]) -> Dict[str, Any]:
         cur = size_best.get(bucket)
         if cur is None or npv > cur["npv"]:
             size_best[bucket] = {"p": p, "npv": npv}
-    sizes = sorted(size_best.values(), key=lambda s: s["p"].Q_demand)
+    return sorted(size_best.values(), key=lambda s: s["p"].Q_demand)
+
+
+def size_curve(core: Dict[str, Any]) -> Dict[str, Any]:
+    """Economic heat pump size: every working pump of the analysed pump's kind,
+    costed with the same inputs. Per size (1 % of the demand) the best machine
+    is kept, so the line is the best you can do at each size and its peak is
+    the economic optimum.
+
+    The kind: real machines for a real pump; for a theoretical one (an
+    archetype such as Carnot) that archetype's points, with the real machines
+    as a reference line. The analysed pump is always on its line, even when it
+    is not the best of its size or lies off the profiles, so the chart shows
+    where it stands among the sizes."""
+    pump = core["pump"]
+    theoretical = bool(pump.theoretical)
+    sizes = _best_per_size(core, core["archetypeFeasible"] if theoretical else core["realFeasible"])
+    if not any(_same(s["p"], pump) for s in sizes):
+        sizes = sorted([*sizes, {"p": pump, "npv": core["results"][0]["npv"]}], key=lambda s: s["p"].Q_demand)
     optimum = None
     for s in sizes:
         if optimum is None or s["npv"] > optimum["npv"]:
             optimum = s
-    return {"sizes": sizes, "optimum": optimum}
+    reference = _best_per_size(core, core["realFeasible"]) if theoretical else []
+    return {"sizes": sizes, "optimum": optimum, "theoretical": theoretical, "reference": reference}
+
+
+def _same(a: OptimizedIntegrationPoint, b: OptimizedIntegrationPoint) -> bool:
+    """One and the same operating point."""
+    return (a.Q_demand, a.Q_source, a.COP, a.T_sink, a.T_source, a.refrigerant) == (
+        b.Q_demand, b.Q_source, b.COP, b.T_sink, b.T_source, b.refrigerant)
 
 
 def npv_runs(core: Dict[str, Any]) -> Dict[str, Any]:

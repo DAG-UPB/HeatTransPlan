@@ -36,6 +36,10 @@ def economics_payload(out: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]
         "size": {
             "sizes": [{"point": s["p"], "npv": s["npv"]} for s in size["sizes"]],
             "optimum": {"point": size["optimum"]["p"], "npv": size["optimum"]["npv"]} if size["optimum"] else None,
+            # True when the analysed pump is theoretical: sizes are then its
+            # archetype's, and reference holds the real machines' best per size.
+            "theoretical": size["theoretical"],
+            "reference": [{"point": s["p"], "npv": s["npv"]} for s in size["reference"]],
         },
         "npv": out["npv"],
     }

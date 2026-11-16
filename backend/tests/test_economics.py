@@ -256,13 +256,58 @@ def test_gas_on_hs_and_its_co2_on_hi():
     near(e["opex1"], r["opex1"], 6)
 
 
+def _real_case():
+    """A case analysing one real machine."""
+    return next(c for c in REF["cases"] if len(c["selected"]) == 1 and not c["selected"][0]["theoretical"])
+
+
 def test_the_size_curve_keeps_to_the_profiles():
-    case = REF["cases"][0]
-    out = economics(case["form"], case["refType"], [], OPT, None)
-    sizes = out["size"]["sizes"]
+    case = _real_case()
+    selected = [OptimizedIntegrationPoint(**p) for p in case["selected"]]
+    out = economics(case["form"], case["refType"], selected, OPT, None)
+    pump = out["core"]["pump"]
+    sizes = [s for s in out["size"]["sizes"] if s["p"] is not pump]
     assert sizes and not any(s["p"].source_limited or s["p"].demand_limited for s in sizes)
+    assert not out["size"]["theoretical"] and out["size"]["reference"] == []
     # Every on-profile pump's size is there, each with its best net present value.
     on = [p for p in OPT.feasible_points if not p.theoretical and p.COP > 0
           and not p.source_limited and not p.demand_limited]
     assert {round(100 * p.Q_demand / out["core"]["refSys"].Q + 1e-9) for p in on} == {
         round(100 * s["p"].Q_demand / out["core"]["refSys"].Q + 1e-9) for s in sizes}
+
+
+def _on_line(out):
+    pump, npv = out["core"]["pump"], out["core"]["results"][0]["npv"]
+    hits = [s for s in out["size"]["sizes"] if s["p"].Q_demand == pump.Q_demand and s["p"].COP == pump.COP]
+    return len(hits) == 1 and hits[0]["npv"] == pytest.approx(npv)
+
+
+def test_a_theoretical_pump_is_sized_against_its_own_archetype():
+    # Nothing picked: the default pump is the largest, a theoretical one. Its
+    # curve runs over its archetype's points, and it sits on that curve; the
+    # real machines stay as the reference line.
+    case = next(c for c in REF["cases"] if not c["selected"])
+    out = economics(case["form"], case["refType"], [], OPT, None)
+    pump = out["core"]["pump"]
+    assert pump.theoretical
+    size = out["size"]
+    assert size["theoretical"]
+    assert all(s["p"].theoretical and s["p"].refrigerant == pump.refrigerant for s in size["sizes"])
+    assert _on_line(out)
+    assert size["optimum"] in size["sizes"]
+    ref = size["reference"]
+    assert ref and all(not s["p"].theoretical and not s["p"].source_limited and not s["p"].demand_limited for s in ref)
+    q = out["core"]["refSys"].Q
+    assert len({round(100 * s["p"].Q_demand / q + 1e-9) for s in ref}) == len(ref)  # one per size
+
+
+def test_the_analysed_pump_is_always_on_its_line():
+    # Also one that lies off the profiles (source- or demand-limited) and so
+    # is not among the best per size.
+    off = [p for p in OPT.feasible_points if not p.theoretical and p.COP > 0
+           and (p.source_limited or p.demand_limited)]
+    case = _real_case()
+    for p in off[:5] + [OPT.max_q_point]:
+        out = economics(case["form"], case["refType"], [p], OPT, None)
+        assert _on_line(out), (p.Q_demand, p.COP)
+        assert out["size"]["optimum"]["npv"] >= out["core"]["results"][0]["npv"] - 1e-6

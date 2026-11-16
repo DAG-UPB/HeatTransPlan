@@ -58,9 +58,10 @@ export async function rateCopPoint(req: CopPointRequest): Promise<CopPointResult
   return data;
 }
 
-/** The economic analysis of the pump picked (or the default one). Only the
- *  real machines are sent: the reference size and the size curve come from
- *  them, and the archetypes would only make the request heavier. */
+/** The economic analysis of the pump picked (or the default one). The real
+ *  machines are sent, and the points of a theoretical pump's own archetype:
+ *  the reference size and the size curve come from them; the other
+ *  archetypes would only make the request heavier. */
 export async function runEconomics(
   form: Record<string, number>,
   refType: string,
@@ -68,8 +69,12 @@ export async function runEconomics(
   opt: HPIOptimizationResult | null | undefined,
   sensBase: { fuel: number; el: number } | null = null
 ): Promise<EconNumbers | null> {
+  const analysed = selected.length ? selected : opt?.max_q_point ? [opt.max_q_point] : [];
+  const archetypes = new Set(analysed.filter((p) => p.theoretical).map((p) => p.refrigerant));
   const optimization = opt && {
-    feasible_points: opt.feasible_points.filter((p) => !p.theoretical),
+    feasible_points: opt.feasible_points.filter(
+      (p) => !p.theoretical || archetypes.has(p.refrigerant)
+    ),
     max_q_point: opt.max_q_point,
   };
   const { data } = await client.post<EconNumbers | null>('/api/analysis/economics', {

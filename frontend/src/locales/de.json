@@ -739,6 +739,8 @@
       "size_hp": "Wärmepumpe",
       "size_rest": "Rest vom {{ref}}",
       "size_curve": "Beste Wärmepumpe je Größe",
+      "size_curve_theoretical": "Theoretisch ({{name}}): beste je Größe",
+      "size_reference": "Reale Wärmepumpen, beste je Größe",
       "size_optimum": "Wirtschaftliches Optimum",
       "size_analysed": "Ausgewählte WP",
       "invest_share": "Investition = {{pct}} % der Gesamtkosten über {{T}} Jahre",
