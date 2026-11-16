@@ -115,7 +115,11 @@ export function investmentChart(c: ChartCtx): Fig {
     layout: layout(t('economics.charts.bar_title', { T: inp.T }), {
       barmode: 'stack',
       // Headroom for the totals above the bars.
-      yaxis: { title: { text: '€' }, tickformat: ',.0f', range: [0, 1.15 * Math.max(1, ...totals)] },
+      yaxis: {
+        title: { text: '€' },
+        tickformat: ',.0f',
+        range: [0, 1.15 * Math.max(1, ...totals)],
+      },
     }),
   };
   return bar;
@@ -198,7 +202,7 @@ export function sensitivityChart(c: ChartCtx): { sens: Fig; sensExplain: string 
         edgeY.push(null);
         edgeAt.push(null);
       });
-    }),
+    })
   );
   // Today's prices as a "WP"/"HP" box like the pump on the optimization chart;
   // hovering it names the selected pump.
@@ -370,6 +374,10 @@ export function sizeChart(c: ChartCtx): {
   // of the demand) the backend keeps the best machine, so the line is the best
   // you can do at each size and its peak is the economic optimum.
   const sizes = c.n.size.sizes.map((s) => ({ p: s.point, npv: s.npv }));
+  // A theoretical pump is sized against its own archetype; the real machines
+  // then stay in view as a reference line.
+  const reference = (c.n.size.reference ?? []).map((s) => ({ p: s.point, npv: s.npv }));
+  const theoretical = c.n.size.theoretical ?? false;
   const optimum = c.n.size.optimum && { p: c.n.size.optimum.point, npv: c.n.size.optimum.npv };
   const analysed = points[0];
   const analysedNpv = results[0]?.npv;
@@ -388,12 +396,33 @@ export function sizeChart(c: ChartCtx): {
         mode: 'lines+markers',
         x: sizes.map((s) => s.p.Q_demand),
         y: sizes.map((s) => s.npv),
-        name: t('economics.charts.size_curve'),
-        line: { color: isDark ? '#94A3B8' : '#9AA0A6', width: 2 },
+        name: theoretical
+          ? t('economics.charts.size_curve_theoretical', { name: sizes[0]?.p.refrigerant ?? '' })
+          : t('economics.charts.size_curve'),
+        line: {
+          color: isDark ? '#94A3B8' : '#9AA0A6',
+          width: 2,
+          ...(theoretical ? { dash: 'dash' } : {}),
+        },
         marker: { size: 7, color: sizes.map((s) => (s.npv < 0 ? RED : GREEN)) },
         customdata: sizes.map((s) => sizeHover(s.p)),
         hovertemplate: `%{customdata}<br>${t('economics.rows.npv')}: %{y:,.0f} €<extra></extra>`,
       },
+      ...(reference.length
+        ? [
+            {
+              type: 'scatter',
+              mode: 'lines+markers',
+              x: reference.map((s) => s.p.Q_demand),
+              y: reference.map((s) => s.npv),
+              name: t('economics.charts.size_reference'),
+              line: { color: isDark ? '#64748B' : '#C4C7CC', width: 1.5 },
+              marker: { size: 5, color: isDark ? '#64748B' : '#C4C7CC' },
+              customdata: reference.map((s) => sizeHover(s.p)),
+              hovertemplate: `%{customdata}<br>${t('economics.rows.npv')}: %{y:,.0f} €<extra></extra>`,
+            },
+          ]
+        : []),
       ...(optimum
         ? [
             {
@@ -424,7 +453,12 @@ export function sizeChart(c: ChartCtx): {
               x: [analysed.Q_demand],
               y: [analysedNpv],
               name: t('economics.charts.size_analysed'),
-              marker: { symbol: 'square', size: 12, color: hpFill, line: { color: hpStroke, width: 2 } },
+              marker: {
+                symbol: 'square',
+                size: 12,
+                color: hpFill,
+                line: { color: hpStroke, width: 2 },
+              },
               customdata: [sizeHover(analysed)],
               hovertemplate: `<b>${t('economics.charts.size_analysed')}</b><br>%{customdata}<br>${t('economics.rows.npv')}: %{y:,.0f} €<extra></extra>`,
             },
@@ -477,7 +511,8 @@ export function sizeChart(c: ChartCtx): {
         npv: formatDe(optimum.npv),
       })
     : t('economics.size_none');
-  return { size, sizeExplain, sizes };
+  // Every point that can be clicked to analyse it: the curve and the reference.
+  return { size, sizeExplain, sizes: [...sizes, ...reference] };
 }
 
 /** Net present value year by year, with the year each pump pays off. */

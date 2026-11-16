@@ -51,4 +51,31 @@ describe('economic model', () => {
     expect(dump(econReportData(i18n.t, DEFAULTS, 'eboiler', N.eboiler_one))).toMatchSnapshot();
     expect(buildEconomics(i18n.t, DEFAULTS, 'gas', N.none)).toBeNull();
   });
+
+  it('a theoretical pump: its archetype as a dashed line, the real machines as reference', () => {
+    // The fixture's default pump is theoretical; its curve here is just the
+    // pump itself, with the fixture's real machines as the reference.
+    const base = N.gas_none!;
+    const n = {
+      ...base,
+      size: {
+        ...base.size,
+        theoretical: true,
+        sizes: [{ point: base.pump, npv: base.results[0].npv }],
+        reference: base.size.sizes,
+      },
+    } as EconNumbers;
+    const out = buildEconomics(i18n.t, DEFAULTS, 'gas', n)!;
+    const [curve, reference] = out.figures.size.data as unknown as Array<{
+      name: string;
+      line: { dash?: string };
+      x: number[];
+    }>;
+    expect(curve.name).toBe(`Theoretical (${n.size.sizes[0].point.refrigerant}): best per size`);
+    expect(curve.line.dash).toBe('dash');
+    expect(reference.name).toBe('Real heat pumps, best per size');
+    expect(reference.x).toEqual(n.size.reference.map((s) => s.point.Q_demand));
+    // Both lines can be clicked to analyse a pump.
+    expect(out.sizes).toHaveLength(n.size.sizes.length + n.size.reference.length);
+  });
 });

@@ -739,6 +739,8 @@
       "size_hp": "Heat pump",
       "size_rest": "Rest from {{ref}}",
       "size_curve": "Best heat pump per size",
+      "size_curve_theoretical": "Theoretical ({{name}}): best per size",
+      "size_reference": "Real heat pumps, best per size",
       "size_optimum": "Economic optimum",
       "size_analysed": "Selected HP",
       "invest_share": "Investment = {{pct}} % of the total costs over {{T}} years",
