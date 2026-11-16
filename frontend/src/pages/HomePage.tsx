@@ -8,15 +8,12 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BookOpen, Bot, CirclePlay, FileText, FolderOpen } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { getExample } from '../api/io';
-import { useProjectStore } from '../store/projectStore';
-import { loadProject } from '../store/loadProject';
 import { useFeatures } from '../hooks/useFeatures';
 import LiveSetup from '../live/LiveSetup';
-import { CHAPTERS, PARTS, startTour, type PartNumber } from '../tour/guidedTour';
+import { CHAPTERS, PARTS, type PartNumber } from '../tour/guidedTour';
+import { hasOwnData, loadExampleProject, tourWithExample } from '../tour/tourWithExample';
 import styles from './HomePage.module.css';
 
-const EXAMPLE = 'heat_integration_example_1.json';
 const PROJECT_URL = 'https://www.heattransplan.de/';
 const PROJECT_IMG_URL =
   'https://www.heattransplan.de/fileadmin/_processed_/4/c/csm_AdobeStock_880898724_d3e9ed3e63.jpeg';
@@ -63,34 +60,27 @@ export default function HomePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadExample = async () => {
+  // Busy while the example loads; a failure shows under the buttons.
+  const withExample = async (run: () => Promise<void>) => {
     setBusy(true);
     setError(null);
     try {
-      loadProject(await getExample(EXAMPLE));
-      return true;
+      await run();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
-      return false;
     } finally {
       setBusy(false);
     }
   };
 
-  const hasOwnData = () => (useProjectStore.getState().state.processes?.length ?? 0) > 0;
-
-  // The tour shows the example, but never replaces someone's own project
-  // without asking; declining tours their own project instead.
-  const tour = async (from: number) => {
-    if (!hasOwnData() || window.confirm(t('home_preview.tour_replace'))) {
-      if (!(await loadExample())) return;
-    }
-    startTour(navigate, t, from);
-  };
+  const tour = (from: number) => withExample(() => tourWithExample(navigate, t, from));
 
   const tryExample = async () => {
     if (hasOwnData() && !window.confirm(t('home_preview.example_replace'))) return;
-    if (await loadExample()) navigate('/data-collection');
+    await withExample(async () => {
+      await loadExampleProject();
+      navigate('/data-collection');
+    });
   };
 
   return (
