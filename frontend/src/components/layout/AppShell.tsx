@@ -85,6 +85,41 @@ export default function AppShell({ children }: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, [menuOpen]);
 
+  // Header buttons. On a small screen the header has room only for the AI control,
+  // the page help and the menu; the rest also sit in the menu sheet then.
+  const resetButton = (
+    <button
+      className="btn btn-sm"
+      onClick={() => setShowResetModal(true)}
+      title={t('action_bar.reset_modal_title')}
+      aria-label={t('home.reset_all')}
+    >
+      <RotateCcw size={14} /> <span className="nav-btn-label">{t('home.reset_all')}</span>
+    </button>
+  );
+  const docsLink = (
+    <a
+      href="/docs/"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="theme-toggle"
+      data-tip={t('home.documentation')}
+      aria-label={t('home.documentation')}
+    >
+      <BookOpen size={16} />
+    </a>
+  );
+  const themeButton = (
+    <button
+      className="theme-toggle"
+      onClick={toggleTheme}
+      data-tip={theme === 'dark' ? t('appshell.theme.light') : t('appshell.theme.dark')}
+      aria-label={theme === 'dark' ? t('appshell.theme.light') : t('appshell.theme.dark')}
+    >
+      {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+    </button>
+  );
+
   return (
     <div className="app-shell">
       {/* Top Navigation */}
@@ -110,38 +145,23 @@ export default function AppShell({ children }: Props) {
               <span className="nav-label">{t(item.translationKey)}</span>
             </NavLink>
           ))}
+          <div className="nav-sheet-actions">
+            {resetButton}
+            <LanguagePicker />
+            {docsLink}
+            {themeButton}
+          </div>
         </nav>
 
         <div className="nav-actions">
-          <button
-            className="btn btn-sm"
-            onClick={() => setShowResetModal(true)}
-            title={t('action_bar.reset_modal_title')}
-            style={{ marginRight: '8px' }}
-          >
-            <RotateCcw size={14} /> {t('home.reset_all')}
-          </button>
+          <span className="nav-secondary">{resetButton}</span>
           {features.ai && <LiveButton />}
-          <LanguagePicker />
-          <a
-            href="/docs/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="theme-toggle"
-            data-tip={t('home.documentation')}
-            aria-label={t('home.documentation')}
-          >
-            <BookOpen size={16} />
-          </a>
+          <span className="nav-secondary">
+            <LanguagePicker />
+            {docsLink}
+          </span>
           <PageTourButton />
-          <button
-            className="theme-toggle"
-            onClick={toggleTheme}
-            data-tip={theme === 'dark' ? t('appshell.theme.light') : t('appshell.theme.dark')}
-            aria-label={theme === 'dark' ? t('appshell.theme.light') : t('appshell.theme.dark')}
-          >
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
+          <span className="nav-secondary">{themeButton}</span>
           <button
             className="theme-toggle nav-burger"
             onClick={() => setMenuOpen((open) => !open)}

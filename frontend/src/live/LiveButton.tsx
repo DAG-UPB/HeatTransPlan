@@ -10,12 +10,7 @@ import { CommandError, useLiveCommand } from './commands';
 import { setCurrentPage } from './view';
 import LiveSetup from './LiveSetup';
 import AiControls from './AiControls';
-import {
-  connectLive,
-  disconnectLive,
-  resumeLive,
-  useLiveStore,
-} from './liveClient';
+import { connectLive, disconnectLive, resumeLive, useLiveStore } from './liveClient';
 
 const PAGES: Record<string, string> = {
   home: '/',
@@ -45,22 +40,19 @@ export default function LiveButton() {
     return { page: path };
   });
 
-  // How to set the assistant up: next to the button, connected or not.
-  const help = (
-    <>
-      <button
-        type="button"
-        className="live-icon"
-        style={{ marginRight: '8px' }}
-        onClick={() => setSetupOpen(true)}
-        data-tip={t('live.setup_title')}
-        aria-label={t('live.setup_title')}
-      >
-        <CircleHelp size={15} />
-      </button>
-      {setupOpen && <LiveSetup onClose={() => setSetupOpen(false)} />}
-    </>
+  // How to set the assistant up: part of the AI control, connected or not.
+  const helpButton = (className: string) => (
+    <button
+      type="button"
+      className={className}
+      onClick={() => setSetupOpen(true)}
+      data-tip={t('live.setup_title')}
+      aria-label={t('live.setup_title')}
+    >
+      <CircleHelp size={className === 'live-icon' ? 13 : 14} />
+    </button>
   );
+  const setup = setupOpen && <LiveSetup onClose={() => setSetupOpen(false)} />;
 
   if (status === 'on' || status === 'connecting') {
     return (
@@ -87,6 +79,7 @@ export default function LiveButton() {
             </button>
           )}
           {status === 'on' && <AiControls />}
+          {helpButton('live-icon')}
           <button
             type="button"
             className="live-icon"
@@ -97,23 +90,26 @@ export default function LiveButton() {
             <X size={13} />
           </button>
         </span>
-        {help}
+        {setup}
       </>
     );
   }
 
   return (
     <>
-      <button
-        type="button"
-        className="btn btn-sm"
-        style={{ marginRight: '8px' }}
-        onClick={() => void connectLive()}
-        title={status === 'error' ? t('live.error', { msg: error }) : t('live.connect_hint')}
-      >
-        <Bot size={14} /> {t('live.connect')}
-      </button>
-      {help}
+      <span className="live-group">
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={() => void connectLive()}
+          title={status === 'error' ? t('live.error', { msg: error }) : t('live.connect_hint')}
+          aria-label={t('live.connect')}
+        >
+          <Bot size={14} /> <span className="nav-btn-label">{t('live.connect')}</span>
+        </button>
+        {helpButton('btn btn-sm live-group-help')}
+      </span>
+      {setup}
     </>
   );
 }

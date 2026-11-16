@@ -136,6 +136,65 @@
   box-shadow: var(--shadow);
 }
 
+/* Groups of header buttons; they lay out as if their buttons stood alone. */
+.nav-secondary {
+  display: contents;
+}
+
+/* The reset/language/docs/theme copies in the menu sheet: phones only. */
+.nav-sheet-actions {
+  display: none;
+}
+
+/* AI: connect and its setup help, one control. */
+.live-group {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.live-group > .btn:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.live-group > .live-group-help {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left-width: 0;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* Less room: the reset and AI buttons keep only their icons (their names stay
+   in the tooltip and for screen readers), then the page links. */
+@media (max-width: 1280px) {
+  .nav-actions .nav-btn-label {
+    display: none;
+  }
+}
+@media (max-width: 1100px) {
+  /* Equal outer columns would give the brand side as much room as the wider
+     button side; here each side takes only what it needs. */
+  .top-nav {
+    grid-template-columns: auto 1fr auto;
+  }
+  .nav-links {
+    justify-self: center;
+  }
+  .nav-label {
+    display: none;
+  }
+  .nav-links {
+    gap: 4px;
+  }
+  .nav-item {
+    padding: 8px 12px;
+  }
+}
+@media (max-width: 900px) {
+  .brand-version {
+    display: none;
+  }
+}
+
 /* Burger — hidden until the nav no longer fits beside the brand. */
 .nav-burger {
   display: none;
@@ -188,6 +247,10 @@
     display: flex;
   }
 
+  .nav-label {
+    display: inline;
+  }
+
   .nav-item {
     border-radius: var(--radius);
     padding: 12px 14px;
@@ -205,12 +268,27 @@
   }
 }
 
+/* With the menu: reset, language, documentation and theme move into its sheet. */
+@media (max-width: 768px) {
+  .nav-actions .nav-secondary {
+    display: none;
+  }
+  .nav-sheet-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 6px 4px;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+}
+
 /* AI link: the session code the AI needs, with copy and disconnect. */
 .live-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-right: 8px;
   padding: 3px 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
