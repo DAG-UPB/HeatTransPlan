@@ -30,13 +30,8 @@ export default function PinchMetrics() {
   } = atRecoveryShare(pinchResult, recoveryPct);
 
   const cards = [
-    {
-      key: 'heating',
-      label: t('metrics.min_heating'),
-      description: t('metrics.min_heating_desc'),
-      value: `${heating.toFixed(2)} kW`,
-      cls: 'hot',
-    },
+    // Left to right: what must be cooled, what must be heated, what the
+    // streams can exchange, then the pinch that divides them.
     {
       key: 'cooling',
       label: t('metrics.min_cooling'),
@@ -45,11 +40,11 @@ export default function PinchMetrics() {
       cls: 'cold',
     },
     {
-      key: 'pinch',
-      label: t('metrics.pinch_temp'),
-      description: t('metrics.pinch_temp_desc'),
-      value: `${pinchResult.pinch_temperature.toFixed(1)} °C`,
-      cls: 'pinch',
+      key: 'heating',
+      label: t('metrics.min_heating'),
+      description: t('metrics.min_heating_desc'),
+      value: `${heating.toFixed(2)} kW`,
+      cls: 'hot',
     },
     {
       key: 'recovery',
@@ -57,6 +52,13 @@ export default function PinchMetrics() {
       description: t('metrics.heat_recovery_desc'),
       value: `${heatRecovery.toFixed(2)} kW`,
       cls: 'recovery',
+    },
+    {
+      key: 'pinch',
+      label: t('metrics.pinch_temp'),
+      description: t('metrics.pinch_temp_desc'),
+      value: `${pinchResult.pinch_temperature.toFixed(1)} °C`,
+      cls: 'pinch',
     },
   ];
 
