@@ -11,13 +11,15 @@ The backend is a FastAPI application. Its interactive reference, with every endp
 - locally: <http://localhost:8000/api/docs>
 - machine-readable: `/api/openapi.json`
 
+On a server that asks for keys, the reference needs a key too, for example `curl -H "X-API-Key: <key>" https://<server>/api/openapi.json`.
+
 **Authentication: API keys.** When the server sets `API_KEY_SECRET`, every request to `/api/*` and `/mcp` needs a key, sent as the header `X-API-Key: <key>` or `Authorization: Bearer <key>`; without one the answer is `403`. Anybody gets a key at once, with no email and no account: on the page (Connect AI → **?** → **Get a key**) or with `POST /api/keys`, which answers `{"key": "htp_…"}`. Keep it: it is shown only once. User keys do not expire.
 
 The server stores nothing about keys: a key is signed with `API_KEY_SECRET` (HMAC-SHA256), so checking it needs no list of keys and no record of who got one. Keys are not there to keep anyone out; they give each key its own limits (instead of each address) and let the operator switch off one misused key without touching the others.
 
 - The web page gets its own token by itself (`POST /api/keys/page`, valid about 24 hours) and renews it; a visitor never sees or pastes a key.
 - Getting keys is limited per address: 5 user keys and 30 page tokens an hour.
-- Open without a key: `GET /api/health`, `GET /api/features`, `POST /api/keys`, `POST /api/keys/page`, the one-time download links `/api/mcp/files/…`, and this reference (`/api/docs`, `/api/openapi.json`).
+- Open without a key: `GET /api/health`, `GET /api/features`, `POST /api/keys`, `POST /api/keys/page` and the one-time download links `/api/mcp/files/…`.
 - Operator keys in `API_KEYS` (comma separated) are accepted as they are. Without `API_KEY_SECRET` and `API_KEYS` the API is open, which is the default for local use.
 
 ### Endpoints

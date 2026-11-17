@@ -135,10 +135,12 @@ def test_the_open_endpoints_need_no_key(keys_on):
     assert c.get("/api/features").status_code == 200
     assert c.post("/api/keys").status_code == 200
     assert c.post("/api/keys/page").status_code == 200
-    assert c.get("/api/docs").status_code == 200
-    assert c.get("/api/openapi.json").status_code == 200
     # An expired download link: 404 from the route, not 403 from the key check.
     assert c.get("/api/mcp/files/nope/x.csv").status_code == 404
+    # The API reference wants a key, like every other /api address.
+    assert c.get("/api/docs").status_code == 403
+    assert c.get("/api/openapi.json").status_code == 403
+    assert c.get("/api/openapi.json", headers={"X-API-Key": c.post("/api/keys").json()["key"]}).status_code == 200
     # Every other /api address wants a key, known or not.
     for path in ("/api/assets/examples", "/api/live/sessions/abc", "/api/nothing-here", "/api"):
         assert c.get(path).status_code == 403, path
