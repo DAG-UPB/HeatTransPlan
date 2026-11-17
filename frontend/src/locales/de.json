@@ -745,7 +745,7 @@
       "size_reference": "Reale Wärmepumpen, beste je Größe",
       "size_optimum": "Wirtschaftliches Optimum",
       "size_analysed": "Ausgewählte WP",
-      "invest_share": "Investition = {{pct}} % der Gesamtkosten über {{T}} Jahre",
+      "invest_with_share": "Investition (% der Kosten)",
       "not_paid_back": "Noch nicht amortisiert",
       "paid_back": "Amortisiert",
       "period_line": "Ende Betrachtungszeitraum ({{T}} Jahre)"
@@ -1032,6 +1032,36 @@
     "heat_sink": "Wärmesenke"
   },
   "live": {
+    "diagram": {
+      "label": "So arbeitet die KI mit HeatTransPlan: der Anwender im Browser, der KI-Assistent und der HeatTransPlan-Server",
+      "you": {
+        "title": "Anwender",
+        "sub": "HeatTransPlan im Browser",
+        "p1": "klickt „KI verbinden“",
+        "p2": "gibt der KI den Code",
+        "p3": "sieht jeden Schritt live"
+      },
+      "ai": {
+        "title": "KI-Assistent",
+        "sub": "Claude oder ein anderer MCP-Client",
+        "p1": "liest die offene Seite",
+        "p2": "ändert sie Schritt für Schritt",
+        "p3": "fragt, bevor sie löscht"
+      },
+      "app": {
+        "title": "HeatTransPlan",
+        "sub": "der Server: rechnet, speichert nichts",
+        "p1": "Werkzeuge für die KI (MCP)",
+        "p2": "rechnet Pinch und Wärmepumpen",
+        "p3": "leitet Befehle an die Seite"
+      },
+      "ask": "Auftrag, Code",
+      "answer": "Antwort",
+      "tools": "Werkzeuge (MCP)",
+      "results": "Ergebnisse",
+      "live": "Befehle · Live-Updates",
+      "note": "Das Projekt bleibt auf der Seite im Browser. Was die KI liest, geht an den Anbieter des KI-Modells."
+    },
     "connect": "KI verbinden",
     "connect_hint": "Einen KI-Agenten (über den HeatTransPlan-MCP-Server) diese Seite sehen und steuern lassen. Ihr Projekt bleibt auf dieser Seite; auf dem Server wird nichts davon gespeichert.",
     "code": "Sitzungscode für die KI",

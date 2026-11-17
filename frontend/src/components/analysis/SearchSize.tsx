@@ -1,7 +1,7 @@
 /** How big the heat pump search was: every combination looked at, how many
  *  COPs were computed and how many of those a model predicted, the feasible
- *  points left, and how long it took on the server. Shown above the
- *  optimization's table and at the top of the heat pump view. */
+ *  points left, and how long it took on the server. Shown at the top of the
+ *  heat pump view (HeatPumpView). */
 
 import { useTranslation } from 'react-i18next';
 import { useAnalysisStore } from '../../store/analysisStore';

@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Copy, X } from 'lucide-react';
 import client from '../api/client';
+import LiveDiagram from './LiveDiagram';
 import { useFeatures } from '../hooks/useFeatures';
 import '../components/analysis/CopFormulaModal.css';
 
@@ -132,6 +133,7 @@ export default function LiveSetup({ onClose }: { onClose: () => void }) {
         </header>
         <div className="cf-body live-setup">
           <p>{t('live.setup_intro')}</p>
+          <LiveDiagram />
           <ol>
             {needKey && (
               <li>

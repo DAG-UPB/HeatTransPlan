@@ -516,13 +516,18 @@ exports[`economic model > German report data 1`] = `
      "type": "bar",
      "name": "Kumulierte Betriebskosten",
      "x": [
-      "Ist-Situation (Erdgaskessel)",
-      "Butane_2 84 °C"
+      "Erdgaskessel",
+      "WP"
      ],
      "y": [
       4809771.549848747,
       3858263.875144681
      ],
+     "hovertext": [
+      "Ist-Situation (Erdgaskessel)",
+      "Butane_2 84 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
      "marker": {
       "color": "#8E3B6E",
       "line": {
@@ -533,15 +538,29 @@ exports[`economic model > German report data 1`] = `
     },
     {
      "type": "bar",
-     "name": "Investitionskosten",
+     "name": "Investition (% der Kosten)",
      "x": [
-      "Ist-Situation (Erdgaskessel)",
-      "Butane_2 84 °C"
+      "Erdgaskessel",
+      "WP"
      ],
      "y": [
       0,
       164063
      ],
+     "hovertext": [
+      "Ist-Situation (Erdgaskessel)",
+      "Butane_2 84 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
+     "text": [
+      "",
+      "4 %"
+     ],
+     "textposition": "inside",
+     "insidetextanchor": "middle",
+     "textfont": {
+      "color": "#1A1C1E"
+     },
      "marker": {
       "color": "#E0A100",
       "line": {
@@ -554,8 +573,8 @@ exports[`economic model > German report data 1`] = `
      "type": "scatter",
      "mode": "text",
      "x": [
-      "Ist-Situation (Erdgaskessel)",
-      "Butane_2 84 °C"
+      "Erdgaskessel",
+      "WP"
      ],
      "y": [
       4809771.549848747,
@@ -568,21 +587,6 @@ exports[`economic model > German report data 1`] = `
      "textposition": "top center",
      "cliponaxis": false,
      "showlegend": false,
-     "hoverinfo": "skip"
-    },
-    {
-     "type": "scatter",
-     "mode": "lines",
-     "x": [
-      null
-     ],
-     "y": [
-      null
-     ],
-     "line": {
-      "width": 0
-     },
-     "name": "Investition = 4 % der Gesamtkosten über 20 Jahre",
      "hoverinfo": "skip"
     }
    ],
@@ -612,6 +616,14 @@ exports[`economic model > German report data 1`] = `
      }
     },
     "barmode": "stack",
+    "xaxis": {
+     "automargin": true,
+     "gridcolor": "#E2E8F0",
+     "tickfont": {
+      "color": "#5F6368"
+     },
+     "tickangle": 0
+    },
     "yaxis": {
      "automargin": true,
      "gridcolor": "#E2E8F0",
@@ -626,13 +638,6 @@ exports[`economic model > German report data 1`] = `
       0,
       5531237.282326059
      ]
-    },
-    "xaxis": {
-     "automargin": true,
-     "gridcolor": "#E2E8F0",
-     "tickfont": {
-      "color": "#5F6368"
-     }
     }
    }
   },
@@ -2017,13 +2022,18 @@ exports[`economic model > buildEconomics eboiler none 1`] = `
      "type": "bar",
      "name": "Cumulative operating costs",
      "x": [
-      "Current (Electric boiler)",
-      "Carnot 113 °C"
+      "Electric boiler",
+      "HP"
      ],
      "y": [
       4294627.095049119,
       2002115.7032228974
      ],
+     "hovertext": [
+      "Current (Electric boiler)",
+      "Carnot 113 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
      "marker": {
       "color": "#8E3B6E",
       "line": {
@@ -2034,15 +2044,29 @@ exports[`economic model > buildEconomics eboiler none 1`] = `
     },
     {
      "type": "bar",
-     "name": "Investment",
+     "name": "Investment (% of cost)",
      "x": [
-      "Current (Electric boiler)",
-      "Carnot 113 °C"
+      "Electric boiler",
+      "HP"
      ],
      "y": [
       0,
       585938
      ],
+     "hovertext": [
+      "Current (Electric boiler)",
+      "Carnot 113 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
+     "text": [
+      "",
+      "23 %"
+     ],
+     "textposition": "inside",
+     "insidetextanchor": "middle",
+     "textfont": {
+      "color": "#1A1C1E"
+     },
      "marker": {
       "color": "#E0A100",
       "line": {
@@ -2055,8 +2079,8 @@ exports[`economic model > buildEconomics eboiler none 1`] = `
      "type": "scatter",
      "mode": "text",
      "x": [
-      "Current (Electric boiler)",
-      "Carnot 113 °C"
+      "Electric boiler",
+      "HP"
      ],
      "y": [
       4294627.095049119,
@@ -2069,21 +2093,6 @@ exports[`economic model > buildEconomics eboiler none 1`] = `
      "textposition": "top center",
      "cliponaxis": false,
      "showlegend": false,
-     "hoverinfo": "skip"
-    },
-    {
-     "type": "scatter",
-     "mode": "lines",
-     "x": [
-      null
-     ],
-     "y": [
-      null
-     ],
-     "line": {
-      "width": 0
-     },
-     "name": "Investment = 23 % of the total costs over 20 years",
      "hoverinfo": "skip"
     }
    ],
@@ -2113,6 +2122,14 @@ exports[`economic model > buildEconomics eboiler none 1`] = `
      }
     },
     "barmode": "stack",
+    "xaxis": {
+     "automargin": true,
+     "gridcolor": "#E2E8F0",
+     "tickfont": {
+      "color": "#5F6368"
+     },
+     "tickangle": 0
+    },
     "yaxis": {
      "automargin": true,
      "gridcolor": "#E2E8F0",
@@ -2127,13 +2144,6 @@ exports[`economic model > buildEconomics eboiler none 1`] = `
       0,
       4938821.159306486
      ]
-    },
-    "xaxis": {
-     "automargin": true,
-     "gridcolor": "#E2E8F0",
-     "tickfont": {
-      "color": "#5F6368"
-     }
     }
    }
   },
@@ -3511,13 +3521,18 @@ exports[`economic model > buildEconomics eboiler one 1`] = `
      "type": "bar",
      "name": "Cumulative operating costs",
      "x": [
-      "Current (Electric boiler)",
-      "Butane_1 102 °C"
+      "Electric boiler",
+      "HP"
      ],
      "y": [
       4294627.095049119,
       2914793.547773918
      ],
+     "hovertext": [
+      "Current (Electric boiler)",
+      "Butane_1 102 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
      "marker": {
       "color": "#8E3B6E",
       "line": {
@@ -3528,15 +3543,29 @@ exports[`economic model > buildEconomics eboiler one 1`] = `
     },
     {
      "type": "bar",
-     "name": "Investment",
+     "name": "Investment (% of cost)",
      "x": [
-      "Current (Electric boiler)",
-      "Butane_1 102 °C"
+      "Electric boiler",
+      "HP"
      ],
      "y": [
       0,
       316406
      ],
+     "hovertext": [
+      "Current (Electric boiler)",
+      "Butane_1 102 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
+     "text": [
+      "",
+      "10 %"
+     ],
+     "textposition": "inside",
+     "insidetextanchor": "middle",
+     "textfont": {
+      "color": "#1A1C1E"
+     },
      "marker": {
       "color": "#E0A100",
       "line": {
@@ -3549,8 +3578,8 @@ exports[`economic model > buildEconomics eboiler one 1`] = `
      "type": "scatter",
      "mode": "text",
      "x": [
-      "Current (Electric boiler)",
-      "Butane_1 102 °C"
+      "Electric boiler",
+      "HP"
      ],
      "y": [
       4294627.095049119,
@@ -3563,21 +3592,6 @@ exports[`economic model > buildEconomics eboiler one 1`] = `
      "textposition": "top center",
      "cliponaxis": false,
      "showlegend": false,
-     "hoverinfo": "skip"
-    },
-    {
-     "type": "scatter",
-     "mode": "lines",
-     "x": [
-      null
-     ],
-     "y": [
-      null
-     ],
-     "line": {
-      "width": 0
-     },
-     "name": "Investment = 10 % of the total costs over 20 years",
      "hoverinfo": "skip"
     }
    ],
@@ -3607,6 +3621,14 @@ exports[`economic model > buildEconomics eboiler one 1`] = `
      }
     },
     "barmode": "stack",
+    "xaxis": {
+     "automargin": true,
+     "gridcolor": "#E2E8F0",
+     "tickfont": {
+      "color": "#5F6368"
+     },
+     "tickangle": 0
+    },
     "yaxis": {
      "automargin": true,
      "gridcolor": "#E2E8F0",
@@ -3621,13 +3643,6 @@ exports[`economic model > buildEconomics eboiler one 1`] = `
       0,
       4938821.159306486
      ]
-    },
-    "xaxis": {
-     "automargin": true,
-     "gridcolor": "#E2E8F0",
-     "tickfont": {
-      "color": "#5F6368"
-     }
     }
    }
   },
@@ -5005,13 +5020,18 @@ exports[`economic model > buildEconomics eboiler several 1`] = `
      "type": "bar",
      "name": "Cumulative operating costs",
      "x": [
-      "Current (Electric boiler)",
-      "Butane_2 84 °C"
+      "Electric boiler",
+      "HP"
      ],
      "y": [
       4294627.095049119,
       3487359.8676889497
      ],
+     "hovertext": [
+      "Current (Electric boiler)",
+      "Butane_2 84 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
      "marker": {
       "color": "#8E3B6E",
       "line": {
@@ -5022,15 +5042,29 @@ exports[`economic model > buildEconomics eboiler several 1`] = `
     },
     {
      "type": "bar",
-     "name": "Investment",
+     "name": "Investment (% of cost)",
      "x": [
-      "Current (Electric boiler)",
-      "Butane_2 84 °C"
+      "Electric boiler",
+      "HP"
      ],
      "y": [
       0,
       164063
      ],
+     "hovertext": [
+      "Current (Electric boiler)",
+      "Butane_2 84 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
+     "text": [
+      "",
+      "4 %"
+     ],
+     "textposition": "inside",
+     "insidetextanchor": "middle",
+     "textfont": {
+      "color": "#1A1C1E"
+     },
      "marker": {
       "color": "#E0A100",
       "line": {
@@ -5043,8 +5077,8 @@ exports[`economic model > buildEconomics eboiler several 1`] = `
      "type": "scatter",
      "mode": "text",
      "x": [
-      "Current (Electric boiler)",
-      "Butane_2 84 °C"
+      "Electric boiler",
+      "HP"
      ],
      "y": [
       4294627.095049119,
@@ -5057,21 +5091,6 @@ exports[`economic model > buildEconomics eboiler several 1`] = `
      "textposition": "top center",
      "cliponaxis": false,
      "showlegend": false,
-     "hoverinfo": "skip"
-    },
-    {
-     "type": "scatter",
-     "mode": "lines",
-     "x": [
-      null
-     ],
-     "y": [
-      null
-     ],
-     "line": {
-      "width": 0
-     },
-     "name": "Investment = 4 % of the total costs over 20 years",
      "hoverinfo": "skip"
     }
    ],
@@ -5101,6 +5120,14 @@ exports[`economic model > buildEconomics eboiler several 1`] = `
      }
     },
     "barmode": "stack",
+    "xaxis": {
+     "automargin": true,
+     "gridcolor": "#E2E8F0",
+     "tickfont": {
+      "color": "#5F6368"
+     },
+     "tickangle": 0
+    },
     "yaxis": {
      "automargin": true,
      "gridcolor": "#E2E8F0",
@@ -5115,13 +5142,6 @@ exports[`economic model > buildEconomics eboiler several 1`] = `
       0,
       4938821.159306486
      ]
-    },
-    "xaxis": {
-     "automargin": true,
-     "gridcolor": "#E2E8F0",
-     "tickfont": {
-      "color": "#5F6368"
-     }
     }
    }
   },
@@ -6499,13 +6519,18 @@ exports[`economic model > buildEconomics gas none 1`] = `
      "type": "bar",
      "name": "Cumulative operating costs",
      "x": [
-      "Current (Gas boiler)",
-      "Carnot 113 °C"
+      "Gas boiler",
+      "HP"
      ],
      "y": [
       4809771.549848747,
       2002115.7032228974
      ],
+     "hovertext": [
+      "Current (Gas boiler)",
+      "Carnot 113 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
      "marker": {
       "color": "#8E3B6E",
       "line": {
@@ -6516,15 +6541,29 @@ exports[`economic model > buildEconomics gas none 1`] = `
     },
     {
      "type": "bar",
-     "name": "Investment",
+     "name": "Investment (% of cost)",
      "x": [
-      "Current (Gas boiler)",
-      "Carnot 113 °C"
+      "Gas boiler",
+      "HP"
      ],
      "y": [
       0,
       585938
      ],
+     "hovertext": [
+      "Current (Gas boiler)",
+      "Carnot 113 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
+     "text": [
+      "",
+      "23 %"
+     ],
+     "textposition": "inside",
+     "insidetextanchor": "middle",
+     "textfont": {
+      "color": "#1A1C1E"
+     },
      "marker": {
       "color": "#E0A100",
       "line": {
@@ -6537,8 +6576,8 @@ exports[`economic model > buildEconomics gas none 1`] = `
      "type": "scatter",
      "mode": "text",
      "x": [
-      "Current (Gas boiler)",
-      "Carnot 113 °C"
+      "Gas boiler",
+      "HP"
      ],
      "y": [
       4809771.549848747,
@@ -6551,21 +6590,6 @@ exports[`economic model > buildEconomics gas none 1`] = `
      "textposition": "top center",
      "cliponaxis": false,
      "showlegend": false,
-     "hoverinfo": "skip"
-    },
-    {
-     "type": "scatter",
-     "mode": "lines",
-     "x": [
-      null
-     ],
-     "y": [
-      null
-     ],
-     "line": {
-      "width": 0
-     },
-     "name": "Investment = 23 % of the total costs over 20 years",
      "hoverinfo": "skip"
     }
    ],
@@ -6595,6 +6619,14 @@ exports[`economic model > buildEconomics gas none 1`] = `
      }
     },
     "barmode": "stack",
+    "xaxis": {
+     "automargin": true,
+     "gridcolor": "#E2E8F0",
+     "tickfont": {
+      "color": "#5F6368"
+     },
+     "tickangle": 0
+    },
     "yaxis": {
      "automargin": true,
      "gridcolor": "#E2E8F0",
@@ -6609,13 +6641,6 @@ exports[`economic model > buildEconomics gas none 1`] = `
       0,
       5531237.282326059
      ]
-    },
-    "xaxis": {
-     "automargin": true,
-     "gridcolor": "#E2E8F0",
-     "tickfont": {
-      "color": "#5F6368"
-     }
     }
    }
   },
@@ -7993,13 +8018,18 @@ exports[`economic model > buildEconomics gas one 1`] = `
      "type": "bar",
      "name": "Cumulative operating costs",
      "x": [
-      "Current (Gas boiler)",
-      "Butane_1 102 °C"
+      "Gas boiler",
+      "HP"
      ],
      "y": [
       4809771.549848747,
       3151759.9969817465
      ],
+     "hovertext": [
+      "Current (Gas boiler)",
+      "Butane_1 102 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
      "marker": {
       "color": "#8E3B6E",
       "line": {
@@ -8010,15 +8040,29 @@ exports[`economic model > buildEconomics gas one 1`] = `
     },
     {
      "type": "bar",
-     "name": "Investment",
+     "name": "Investment (% of cost)",
      "x": [
-      "Current (Gas boiler)",
-      "Butane_1 102 °C"
+      "Gas boiler",
+      "HP"
      ],
      "y": [
       0,
       316406
      ],
+     "hovertext": [
+      "Current (Gas boiler)",
+      "Butane_1 102 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
+     "text": [
+      "",
+      "9 %"
+     ],
+     "textposition": "inside",
+     "insidetextanchor": "middle",
+     "textfont": {
+      "color": "#1A1C1E"
+     },
      "marker": {
       "color": "#E0A100",
       "line": {
@@ -8031,8 +8075,8 @@ exports[`economic model > buildEconomics gas one 1`] = `
      "type": "scatter",
      "mode": "text",
      "x": [
-      "Current (Gas boiler)",
-      "Butane_1 102 °C"
+      "Gas boiler",
+      "HP"
      ],
      "y": [
       4809771.549848747,
@@ -8045,21 +8089,6 @@ exports[`economic model > buildEconomics gas one 1`] = `
      "textposition": "top center",
      "cliponaxis": false,
      "showlegend": false,
-     "hoverinfo": "skip"
-    },
-    {
-     "type": "scatter",
-     "mode": "lines",
-     "x": [
-      null
-     ],
-     "y": [
-      null
-     ],
-     "line": {
-      "width": 0
-     },
-     "name": "Investment = 9 % of the total costs over 20 years",
      "hoverinfo": "skip"
     }
    ],
@@ -8089,6 +8118,14 @@ exports[`economic model > buildEconomics gas one 1`] = `
      }
     },
     "barmode": "stack",
+    "xaxis": {
+     "automargin": true,
+     "gridcolor": "#E2E8F0",
+     "tickfont": {
+      "color": "#5F6368"
+     },
+     "tickangle": 0
+    },
     "yaxis": {
      "automargin": true,
      "gridcolor": "#E2E8F0",
@@ -8103,13 +8140,6 @@ exports[`economic model > buildEconomics gas one 1`] = `
       0,
       5531237.282326059
      ]
-    },
-    "xaxis": {
-     "automargin": true,
-     "gridcolor": "#E2E8F0",
-     "tickfont": {
-      "color": "#5F6368"
-     }
     }
    }
   },
@@ -9487,13 +9517,18 @@ exports[`economic model > buildEconomics gas several 1`] = `
      "type": "bar",
      "name": "Cumulative operating costs",
      "x": [
-      "Current (Gas boiler)",
-      "Butane_2 84 °C"
+      "Gas boiler",
+      "HP"
      ],
      "y": [
       4809771.549848747,
       3858263.875144681
      ],
+     "hovertext": [
+      "Current (Gas boiler)",
+      "Butane_2 84 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
      "marker": {
       "color": "#8E3B6E",
       "line": {
@@ -9504,15 +9539,29 @@ exports[`economic model > buildEconomics gas several 1`] = `
     },
     {
      "type": "bar",
-     "name": "Investment",
+     "name": "Investment (% of cost)",
      "x": [
-      "Current (Gas boiler)",
-      "Butane_2 84 °C"
+      "Gas boiler",
+      "HP"
      ],
      "y": [
       0,
       164063
      ],
+     "hovertext": [
+      "Current (Gas boiler)",
+      "Butane_2 84 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
+     "text": [
+      "",
+      "4 %"
+     ],
+     "textposition": "inside",
+     "insidetextanchor": "middle",
+     "textfont": {
+      "color": "#1A1C1E"
+     },
      "marker": {
       "color": "#E0A100",
       "line": {
@@ -9525,8 +9574,8 @@ exports[`economic model > buildEconomics gas several 1`] = `
      "type": "scatter",
      "mode": "text",
      "x": [
-      "Current (Gas boiler)",
-      "Butane_2 84 °C"
+      "Gas boiler",
+      "HP"
      ],
      "y": [
       4809771.549848747,
@@ -9539,21 +9588,6 @@ exports[`economic model > buildEconomics gas several 1`] = `
      "textposition": "top center",
      "cliponaxis": false,
      "showlegend": false,
-     "hoverinfo": "skip"
-    },
-    {
-     "type": "scatter",
-     "mode": "lines",
-     "x": [
-      null
-     ],
-     "y": [
-      null
-     ],
-     "line": {
-      "width": 0
-     },
-     "name": "Investment = 4 % of the total costs over 20 years",
      "hoverinfo": "skip"
     }
    ],
@@ -9583,6 +9617,14 @@ exports[`economic model > buildEconomics gas several 1`] = `
      }
     },
     "barmode": "stack",
+    "xaxis": {
+     "automargin": true,
+     "gridcolor": "#E2E8F0",
+     "tickfont": {
+      "color": "#5F6368"
+     },
+     "tickangle": 0
+    },
     "yaxis": {
      "automargin": true,
      "gridcolor": "#E2E8F0",
@@ -9597,13 +9639,6 @@ exports[`economic model > buildEconomics gas several 1`] = `
       0,
       5531237.282326059
      ]
-    },
-    "xaxis": {
-     "automargin": true,
-     "gridcolor": "#E2E8F0",
-     "tickfont": {
-      "color": "#5F6368"
-     }
     }
    }
   },
@@ -10981,13 +11016,18 @@ exports[`economic model > buildEconomics oil none 1`] = `
      "type": "bar",
      "name": "Cumulative operating costs",
      "x": [
-      "Current (Oil boiler)",
-      "Carnot 113 °C"
+      "Oil boiler",
+      "HP"
      ],
      "y": [
       4809771.549848747,
       2002115.7032228974
      ],
+     "hovertext": [
+      "Current (Oil boiler)",
+      "Carnot 113 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
      "marker": {
       "color": "#8E3B6E",
       "line": {
@@ -10998,15 +11038,29 @@ exports[`economic model > buildEconomics oil none 1`] = `
     },
     {
      "type": "bar",
-     "name": "Investment",
+     "name": "Investment (% of cost)",
      "x": [
-      "Current (Oil boiler)",
-      "Carnot 113 °C"
+      "Oil boiler",
+      "HP"
      ],
      "y": [
       0,
       585938
      ],
+     "hovertext": [
+      "Current (Oil boiler)",
+      "Carnot 113 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
+     "text": [
+      "",
+      "23 %"
+     ],
+     "textposition": "inside",
+     "insidetextanchor": "middle",
+     "textfont": {
+      "color": "#1A1C1E"
+     },
      "marker": {
       "color": "#E0A100",
       "line": {
@@ -11019,8 +11073,8 @@ exports[`economic model > buildEconomics oil none 1`] = `
      "type": "scatter",
      "mode": "text",
      "x": [
-      "Current (Oil boiler)",
-      "Carnot 113 °C"
+      "Oil boiler",
+      "HP"
      ],
      "y": [
       4809771.549848747,
@@ -11033,21 +11087,6 @@ exports[`economic model > buildEconomics oil none 1`] = `
      "textposition": "top center",
      "cliponaxis": false,
      "showlegend": false,
-     "hoverinfo": "skip"
-    },
-    {
-     "type": "scatter",
-     "mode": "lines",
-     "x": [
-      null
-     ],
-     "y": [
-      null
-     ],
-     "line": {
-      "width": 0
-     },
-     "name": "Investment = 23 % of the total costs over 20 years",
      "hoverinfo": "skip"
     }
    ],
@@ -11077,6 +11116,14 @@ exports[`economic model > buildEconomics oil none 1`] = `
      }
     },
     "barmode": "stack",
+    "xaxis": {
+     "automargin": true,
+     "gridcolor": "#E2E8F0",
+     "tickfont": {
+      "color": "#5F6368"
+     },
+     "tickangle": 0
+    },
     "yaxis": {
      "automargin": true,
      "gridcolor": "#E2E8F0",
@@ -11091,13 +11138,6 @@ exports[`economic model > buildEconomics oil none 1`] = `
       0,
       5531237.282326059
      ]
-    },
-    "xaxis": {
-     "automargin": true,
-     "gridcolor": "#E2E8F0",
-     "tickfont": {
-      "color": "#5F6368"
-     }
     }
    }
   },
@@ -12475,13 +12515,18 @@ exports[`economic model > buildEconomics oil one 1`] = `
      "type": "bar",
      "name": "Cumulative operating costs",
      "x": [
-      "Current (Oil boiler)",
-      "Butane_1 102 °C"
+      "Oil boiler",
+      "HP"
      ],
      "y": [
       4809771.549848747,
       3151759.9969817465
      ],
+     "hovertext": [
+      "Current (Oil boiler)",
+      "Butane_1 102 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
      "marker": {
       "color": "#8E3B6E",
       "line": {
@@ -12492,15 +12537,29 @@ exports[`economic model > buildEconomics oil one 1`] = `
     },
     {
      "type": "bar",
-     "name": "Investment",
+     "name": "Investment (% of cost)",
      "x": [
-      "Current (Oil boiler)",
-      "Butane_1 102 °C"
+      "Oil boiler",
+      "HP"
      ],
      "y": [
       0,
       316406
      ],
+     "hovertext": [
+      "Current (Oil boiler)",
+      "Butane_1 102 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
+     "text": [
+      "",
+      "9 %"
+     ],
+     "textposition": "inside",
+     "insidetextanchor": "middle",
+     "textfont": {
+      "color": "#1A1C1E"
+     },
      "marker": {
       "color": "#E0A100",
       "line": {
@@ -12513,8 +12572,8 @@ exports[`economic model > buildEconomics oil one 1`] = `
      "type": "scatter",
      "mode": "text",
      "x": [
-      "Current (Oil boiler)",
-      "Butane_1 102 °C"
+      "Oil boiler",
+      "HP"
      ],
      "y": [
       4809771.549848747,
@@ -12527,21 +12586,6 @@ exports[`economic model > buildEconomics oil one 1`] = `
      "textposition": "top center",
      "cliponaxis": false,
      "showlegend": false,
-     "hoverinfo": "skip"
-    },
-    {
-     "type": "scatter",
-     "mode": "lines",
-     "x": [
-      null
-     ],
-     "y": [
-      null
-     ],
-     "line": {
-      "width": 0
-     },
-     "name": "Investment = 9 % of the total costs over 20 years",
      "hoverinfo": "skip"
     }
    ],
@@ -12571,6 +12615,14 @@ exports[`economic model > buildEconomics oil one 1`] = `
      }
     },
     "barmode": "stack",
+    "xaxis": {
+     "automargin": true,
+     "gridcolor": "#E2E8F0",
+     "tickfont": {
+      "color": "#5F6368"
+     },
+     "tickangle": 0
+    },
     "yaxis": {
      "automargin": true,
      "gridcolor": "#E2E8F0",
@@ -12585,13 +12637,6 @@ exports[`economic model > buildEconomics oil one 1`] = `
       0,
       5531237.282326059
      ]
-    },
-    "xaxis": {
-     "automargin": true,
-     "gridcolor": "#E2E8F0",
-     "tickfont": {
-      "color": "#5F6368"
-     }
     }
    }
   },
@@ -13969,13 +14014,18 @@ exports[`economic model > buildEconomics oil several 1`] = `
      "type": "bar",
      "name": "Cumulative operating costs",
      "x": [
-      "Current (Oil boiler)",
-      "Butane_2 84 °C"
+      "Oil boiler",
+      "HP"
      ],
      "y": [
       4809771.549848747,
       3858263.875144681
      ],
+     "hovertext": [
+      "Current (Oil boiler)",
+      "Butane_2 84 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
      "marker": {
       "color": "#8E3B6E",
       "line": {
@@ -13986,15 +14036,29 @@ exports[`economic model > buildEconomics oil several 1`] = `
     },
     {
      "type": "bar",
-     "name": "Investment",
+     "name": "Investment (% of cost)",
      "x": [
-      "Current (Oil boiler)",
-      "Butane_2 84 °C"
+      "Oil boiler",
+      "HP"
      ],
      "y": [
       0,
       164063
      ],
+     "hovertext": [
+      "Current (Oil boiler)",
+      "Butane_2 84 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
+     "text": [
+      "",
+      "4 %"
+     ],
+     "textposition": "inside",
+     "insidetextanchor": "middle",
+     "textfont": {
+      "color": "#1A1C1E"
+     },
      "marker": {
       "color": "#E0A100",
       "line": {
@@ -14007,8 +14071,8 @@ exports[`economic model > buildEconomics oil several 1`] = `
      "type": "scatter",
      "mode": "text",
      "x": [
-      "Current (Oil boiler)",
-      "Butane_2 84 °C"
+      "Oil boiler",
+      "HP"
      ],
      "y": [
       4809771.549848747,
@@ -14021,21 +14085,6 @@ exports[`economic model > buildEconomics oil several 1`] = `
      "textposition": "top center",
      "cliponaxis": false,
      "showlegend": false,
-     "hoverinfo": "skip"
-    },
-    {
-     "type": "scatter",
-     "mode": "lines",
-     "x": [
-      null
-     ],
-     "y": [
-      null
-     ],
-     "line": {
-      "width": 0
-     },
-     "name": "Investment = 4 % of the total costs over 20 years",
      "hoverinfo": "skip"
     }
    ],
@@ -14065,6 +14114,14 @@ exports[`economic model > buildEconomics oil several 1`] = `
      }
     },
     "barmode": "stack",
+    "xaxis": {
+     "automargin": true,
+     "gridcolor": "#E2E8F0",
+     "tickfont": {
+      "color": "#5F6368"
+     },
+     "tickangle": 0
+    },
     "yaxis": {
      "automargin": true,
      "gridcolor": "#E2E8F0",
@@ -14079,13 +14136,6 @@ exports[`economic model > buildEconomics oil several 1`] = `
       0,
       5531237.282326059
      ]
-    },
-    "xaxis": {
-     "automargin": true,
-     "gridcolor": "#E2E8F0",
-     "tickfont": {
-      "color": "#5F6368"
-     }
     }
    }
   },
@@ -15458,13 +15508,18 @@ exports[`economic model > changed inputs 1`] = `
      "type": "bar",
      "name": "Cumulative operating costs",
      "x": [
-      "Current (Oil boiler)",
-      "Butane_2 84 °C"
+      "Oil boiler",
+      "HP"
      ],
      "y": [
       3358977.8536796565,
       2752585.464482389
      ],
+     "hovertext": [
+      "Current (Oil boiler)",
+      "Butane_2 84 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
      "marker": {
       "color": "#8E3B6E",
       "line": {
@@ -15475,15 +15530,29 @@ exports[`economic model > changed inputs 1`] = `
     },
     {
      "type": "bar",
-     "name": "Investment",
+     "name": "Investment (% of cost)",
      "x": [
-      "Current (Oil boiler)",
-      "Butane_2 84 °C"
+      "Oil boiler",
+      "HP"
      ],
      "y": [
       0,
       246094
      ],
+     "hovertext": [
+      "Current (Oil boiler)",
+      "Butane_2 84 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
+     "text": [
+      "",
+      "8 %"
+     ],
+     "textposition": "inside",
+     "insidetextanchor": "middle",
+     "textfont": {
+      "color": "#1A1C1E"
+     },
      "marker": {
       "color": "#E0A100",
       "line": {
@@ -15496,8 +15565,8 @@ exports[`economic model > changed inputs 1`] = `
      "type": "scatter",
      "mode": "text",
      "x": [
-      "Current (Oil boiler)",
-      "Butane_2 84 °C"
+      "Oil boiler",
+      "HP"
      ],
      "y": [
       3358977.8536796565,
@@ -15510,21 +15579,6 @@ exports[`economic model > changed inputs 1`] = `
      "textposition": "top center",
      "cliponaxis": false,
      "showlegend": false,
-     "hoverinfo": "skip"
-    },
-    {
-     "type": "scatter",
-     "mode": "lines",
-     "x": [
-      null
-     ],
-     "y": [
-      null
-     ],
-     "line": {
-      "width": 0
-     },
-     "name": "Investment = 8 % of the total costs over 15 years",
      "hoverinfo": "skip"
     }
    ],
@@ -15554,6 +15608,14 @@ exports[`economic model > changed inputs 1`] = `
      }
     },
     "barmode": "stack",
+    "xaxis": {
+     "automargin": true,
+     "gridcolor": "#E2E8F0",
+     "tickfont": {
+      "color": "#5F6368"
+     },
+     "tickangle": 0
+    },
     "yaxis": {
      "automargin": true,
      "gridcolor": "#E2E8F0",
@@ -15568,13 +15630,6 @@ exports[`economic model > changed inputs 1`] = `
       0,
       3862824.5317316046
      ]
-    },
-    "xaxis": {
-     "automargin": true,
-     "gridcolor": "#E2E8F0",
-     "tickfont": {
-      "color": "#5F6368"
-     }
     }
    }
   },
@@ -16917,13 +16972,18 @@ exports[`economic model > dark theme and a fixed sensitivity window 1`] = `
      "type": "bar",
      "name": "Cumulative operating costs",
      "x": [
-      "Current (Gas boiler)",
-      "Butane_1 102 °C"
+      "Gas boiler",
+      "HP"
      ],
      "y": [
       4809771.549848747,
       3151759.9969817465
      ],
+     "hovertext": [
+      "Current (Gas boiler)",
+      "Butane_1 102 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
      "marker": {
       "color": "#B0558C",
       "line": {
@@ -16934,15 +16994,29 @@ exports[`economic model > dark theme and a fixed sensitivity window 1`] = `
     },
     {
      "type": "bar",
-     "name": "Investment",
+     "name": "Investment (% of cost)",
      "x": [
-      "Current (Gas boiler)",
-      "Butane_1 102 °C"
+      "Gas boiler",
+      "HP"
      ],
      "y": [
       0,
       316406
      ],
+     "hovertext": [
+      "Current (Gas boiler)",
+      "Butane_1 102 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
+     "text": [
+      "",
+      "9 %"
+     ],
+     "textposition": "inside",
+     "insidetextanchor": "middle",
+     "textfont": {
+      "color": "#1A1C1E"
+     },
      "marker": {
       "color": "#C98500",
       "line": {
@@ -16955,8 +17029,8 @@ exports[`economic model > dark theme and a fixed sensitivity window 1`] = `
      "type": "scatter",
      "mode": "text",
      "x": [
-      "Current (Gas boiler)",
-      "Butane_1 102 °C"
+      "Gas boiler",
+      "HP"
      ],
      "y": [
       4809771.549848747,
@@ -16969,21 +17043,6 @@ exports[`economic model > dark theme and a fixed sensitivity window 1`] = `
      "textposition": "top center",
      "cliponaxis": false,
      "showlegend": false,
-     "hoverinfo": "skip"
-    },
-    {
-     "type": "scatter",
-     "mode": "lines",
-     "x": [
-      null
-     ],
-     "y": [
-      null
-     ],
-     "line": {
-      "width": 0
-     },
-     "name": "Investment = 9 % of the total costs over 20 years",
      "hoverinfo": "skip"
     }
    ],
@@ -17013,6 +17072,14 @@ exports[`economic model > dark theme and a fixed sensitivity window 1`] = `
      }
     },
     "barmode": "stack",
+    "xaxis": {
+     "automargin": true,
+     "gridcolor": "#334155",
+     "tickfont": {
+      "color": "#94A3B8"
+     },
+     "tickangle": 0
+    },
     "yaxis": {
      "automargin": true,
      "gridcolor": "#334155",
@@ -17027,13 +17094,6 @@ exports[`economic model > dark theme and a fixed sensitivity window 1`] = `
       0,
       5531237.282326059
      ]
-    },
-    "xaxis": {
-     "automargin": true,
-     "gridcolor": "#334155",
-     "tickfont": {
-      "color": "#94A3B8"
-     }
     }
    }
   },
@@ -18441,13 +18501,18 @@ exports[`economic model > report data, core and pump choice 1`] = `
      "type": "bar",
      "name": "Cumulative operating costs",
      "x": [
-      "Current (Electric boiler)",
-      "Butane_1 102 °C"
+      "Electric boiler",
+      "HP"
      ],
      "y": [
       4294627.095049119,
       2914793.547773918
      ],
+     "hovertext": [
+      "Current (Electric boiler)",
+      "Butane_1 102 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
      "marker": {
       "color": "#8E3B6E",
       "line": {
@@ -18458,15 +18523,29 @@ exports[`economic model > report data, core and pump choice 1`] = `
     },
     {
      "type": "bar",
-     "name": "Investment",
+     "name": "Investment (% of cost)",
      "x": [
-      "Current (Electric boiler)",
-      "Butane_1 102 °C"
+      "Electric boiler",
+      "HP"
      ],
      "y": [
       0,
       316406
      ],
+     "hovertext": [
+      "Current (Electric boiler)",
+      "Butane_1 102 °C"
+     ],
+     "hovertemplate": "%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>",
+     "text": [
+      "",
+      "10 %"
+     ],
+     "textposition": "inside",
+     "insidetextanchor": "middle",
+     "textfont": {
+      "color": "#1A1C1E"
+     },
      "marker": {
       "color": "#E0A100",
       "line": {
@@ -18479,8 +18558,8 @@ exports[`economic model > report data, core and pump choice 1`] = `
      "type": "scatter",
      "mode": "text",
      "x": [
-      "Current (Electric boiler)",
-      "Butane_1 102 °C"
+      "Electric boiler",
+      "HP"
      ],
      "y": [
       4294627.095049119,
@@ -18493,21 +18572,6 @@ exports[`economic model > report data, core and pump choice 1`] = `
      "textposition": "top center",
      "cliponaxis": false,
      "showlegend": false,
-     "hoverinfo": "skip"
-    },
-    {
-     "type": "scatter",
-     "mode": "lines",
-     "x": [
-      null
-     ],
-     "y": [
-      null
-     ],
-     "line": {
-      "width": 0
-     },
-     "name": "Investment = 10 % of the total costs over 20 years",
      "hoverinfo": "skip"
     }
    ],
@@ -18537,6 +18601,14 @@ exports[`economic model > report data, core and pump choice 1`] = `
      }
     },
     "barmode": "stack",
+    "xaxis": {
+     "automargin": true,
+     "gridcolor": "#E2E8F0",
+     "tickfont": {
+      "color": "#5F6368"
+     },
+     "tickangle": 0
+    },
     "yaxis": {
      "automargin": true,
      "gridcolor": "#E2E8F0",
@@ -18551,13 +18623,6 @@ exports[`economic model > report data, core and pump choice 1`] = `
       0,
       4938821.159306486
      ]
-    },
-    "xaxis": {
-     "automargin": true,
-     "gridcolor": "#E2E8F0",
-     "tickfont": {
-      "color": "#5F6368"
-     }
     }
    }
   },

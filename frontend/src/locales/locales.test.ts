@@ -14,6 +14,7 @@ import de from './de.json';
  *  reason. */
 const SAME_IN_BOTH = new Set([
   'appshell.title', // product name
+  'live.diagram.app.title', // product name
   'appshell.lang.en', // language names are written in their own language
   'appshell.lang.de',
   'analysis.charts.pinch', // "Pinch" is the loanword used in German too

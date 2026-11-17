@@ -451,3 +451,74 @@
   white-space: nowrap;
   pointer-events: none;
 }
+
+/* How Connect AI works (live/LiveDiagram.tsx): you, the AI, the server.
+   Colours from the theme: brand blue for you, violet for the AI, brand
+   magenta for the app, so it follows light and dark. */
+.ld-wrap {
+  overflow-x: auto;
+  margin: 0.25rem 0 1rem;
+}
+.ld {
+  display: block;
+  width: 100%;
+  min-width: 640px;
+  height: auto;
+}
+.ld-you {
+  --ld: var(--brand-blue);
+}
+.ld-ai {
+  --ld: var(--violet);
+}
+.ld-app {
+  --ld: var(--brand-magenta);
+}
+.ld-box {
+  fill: color-mix(in srgb, var(--ld) 7%, var(--surface));
+  stroke: var(--ld);
+  stroke-width: 2;
+}
+.ld-icon {
+  color: var(--ld);
+}
+.ld-dot {
+  fill: var(--ld);
+}
+.ld-title {
+  font-size: 21px;
+  font-weight: 700;
+  fill: var(--text-main);
+}
+.ld-sub {
+  font-size: 12.5px;
+  fill: var(--text-muted);
+}
+.ld-point {
+  font-size: 13.5px;
+  fill: var(--text-main);
+}
+.ld-arrow {
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  fill: none;
+}
+.ld-dashed {
+  stroke: var(--violet);
+  stroke-dasharray: 6 5;
+}
+.ld-head {
+  fill: var(--text-muted);
+}
+.ld-arrow-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: var(--text-muted);
+}
+.ld-top-label {
+  fill: var(--violet);
+}
+.ld-note {
+  font-size: 12.5px;
+  fill: var(--text-muted);
+}
