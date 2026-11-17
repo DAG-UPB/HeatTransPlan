@@ -227,6 +227,19 @@ class HPIOptimizationDiagnostics(BaseModel):
     # Lowest source / sink temperature any refrigerant in the COP model supports
     model_T_source_min: Optional[float] = None
     model_T_sink_min: Optional[float] = None
+    # The size of the search, for the page to show: heat pumps (real machines,
+    # archetypes, a user formula or trained model) x the source x sink
+    # temperature grid = combinations looked at. Of those, the COP is computed
+    # only where the machine can run: cop_evaluations in all,
+    # cop_predictions of them by a model (the built-in network or a trained
+    # one; archetypes and user formulas are not predictions). duration_ms is
+    # the optimization's own time on the server.
+    heat_pumps: int = 0
+    grid_points: int = 0
+    combinations: int = 0
+    cop_evaluations: int = 0
+    cop_predictions: int = 0
+    duration_ms: Optional[float] = None
     # Candidate (refrigerant x sink temperature) combinations by outcome
     candidates_total: int = 0
     rejected_sink_range: int = 0

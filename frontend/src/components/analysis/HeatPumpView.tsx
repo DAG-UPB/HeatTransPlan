@@ -12,6 +12,7 @@ import type {
   Profile,
   SearchTemp,
 } from '../../types/analysis';
+import SearchSize from './SearchSize';
 import './CopFormulaModal.css';
 import './HeatPumpView.css';
 
@@ -258,6 +259,7 @@ export default function HeatPumpView({
         </header>
 
         <div className="cf-body">
+          <SearchSize />
           <div className="hpv-toolbar">
             <span className="cf-muted">{t('hp_view.scale', { half: half.toFixed(1) })}</span>
           </div>

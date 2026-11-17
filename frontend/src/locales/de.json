@@ -328,6 +328,8 @@
     "added_process": "Prozess {{n}} hinzugefügt"
   },
   "optimization": {
+    "search_size": "Durchsucht: {{combinations}} Kombinationen ({{pumps}} Wärmepumpen × {{pairs}} Paare aus Quell- und Senkentemperatur). Der COP wurde für {{evaluations}} davon berechnet, dort wo die Wärmepumpe arbeiten kann; {{predictions}} davon sind Vorhersagen des COP-Modells, der Rest Formeln der Archetypen. Ergebnis: {{feasible}} machbare Punkte.",
+    "search_time": "Berechnet in {{seconds}} s.",
     "tooltip_refrigerant_type": "Klassifizierung des verwendeten Kältemittels. Natürliche Kältemittel wie Ammoniak (R717) und CO₂ (R744) weisen ein geringes Treibhauspotenzial (GWP) auf, können aber giftig und/oder entflammbar sein. Herkömmlich verwendete synthetische Kältemittel wie HFKW und HFO unterliegen aufgrund ihrer Umweltauswirkungen regulatorischen Anforderungen.",
     "tooltip_cop": "Leistungszahl (<span class='notranslate'>COP</span>) = bereitgestellte Wärmeleistung / eingesetzte elektrische Leistung. Höhere <span class='notranslate'>COP</span>-Werte bedeuten ein günstigeres Verhältnis beider Leistungen: Die Anlage läuft effizienter.",
     "tooltip_q_sink": "Wärmeleistung, die die Wärmepumpe an die Senke (den Prozess) abgibt, in kW.",

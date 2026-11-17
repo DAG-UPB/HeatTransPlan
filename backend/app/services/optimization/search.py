@@ -3,6 +3,7 @@ sink temperature, keeping the points where source heat and demand balance."""
 
 from __future__ import annotations
 import os
+import time
 import numpy as np
 
 from app.models.analysis import (
@@ -38,6 +39,7 @@ from app.services.optimization.profiles import (
 
 
 def run_hpi_optimization(request: HPIOptimizationRequest | PinchResult) -> HPIOptimizationResult:
+    started = time.perf_counter()
     # Accept a bare PinchResult as well, so older callers keep working.
     cop_formula = None
     custom_model = None
@@ -171,6 +173,9 @@ def run_hpi_optimization(request: HPIOptimizationRequest | PinchResult) -> HPIOp
             sink_Q_max=float(np.max(q_demand_clean)),
             model_T_source_min=float(min(a["T_src_min"] for a in alternatives)),
             model_T_sink_min=float(min(a["T_sink_min"] for a in alternatives)),
+            heat_pumps=len(alternatives),
+            grid_points=int(T_quelle_flat.size),
+            combinations=len(alternatives) * int(T_quelle_flat.size),
         )
 
         for alt in alternatives:
@@ -189,6 +194,10 @@ def run_hpi_optimization(request: HPIOptimizationRequest | PinchResult) -> HPIOp
                 & (T_quelle_flat <= T_senke_flat - 10.0)
             )
             cop_preds = np.full(T_quelle_flat.shape, -1.0)
+            computed = int(usable.sum())
+            diag.cop_evaluations += computed
+            if not alt.get("theoretical") and alt["refrigerant_type"] != "Custom formula":
+                diag.cop_predictions += computed
             if usable.any():
                 cop_preds[usable] = np.asarray(
                     alt["cop_fn"](T_quelle_model[usable], T_senke_model[usable]), dtype=float)
@@ -344,6 +353,7 @@ def run_hpi_optimization(request: HPIOptimizationRequest | PinchResult) -> HPIOp
                           key=lambda p: (p.Q_demand, p.COP), default=None)
 
         diag.messages = _diagnostic_messages(diag, len(feasible_points), lang)
+        diag.duration_ms = round((time.perf_counter() - started) * 1000, 1)
 
         return HPIOptimizationResult(
             feasible_points=feasible_points,

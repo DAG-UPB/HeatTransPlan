@@ -222,6 +222,9 @@ def test_the_pages_chain_and_the_projects_chain_agree(client, pct):
         "pinch_result": page_pinch, "profile_mode": "net_load", "cop_formula": None,
         "custom_cop_model": None, "recovery_pct": pct, "search_temps": ["source_out", "sink_out"],
         "lang": "en"}).json()
+    # The same search, timed twice: everything agrees but the clock.
+    for result in (opt, out["optimization"]):
+        result["diagnostics"].pop("duration_ms")
     assert opt == out["optimization"]
 
 
