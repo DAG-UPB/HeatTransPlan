@@ -328,6 +328,8 @@
     "added_process": "Process {{n}} added"
   },
   "optimization": {
+    "search_size": "Searched {{combinations}} combinations ({{pumps}} heat pumps × {{pairs}} pairs of source and sink temperature). The COP was computed for {{evaluations}} of them, where the heat pump can run; {{predictions}} of these are predictions of the COP model, the rest archetype formulas. Result: {{feasible}} feasible points.",
+    "search_time": "Computed in {{seconds}} s.",
     "tooltip_refrigerant_type": "Classification of the refrigerant used. Natural refrigerants such as ammonia (R717) and CO₂ (R744) have a low global warming potential (GWP) but can be toxic and/or flammable. Conventional synthetic refrigerants such as HFCs and HFOs are subject to regulations because of their environmental impact.",
     "tooltip_cop": "Coefficient of performance (<span class='notranslate'>COP</span>) = heating power delivered / electrical power used. A higher <span class='notranslate'>COP</span> means the heat pump runs more efficiently.",
     "tooltip_q_sink": "Heating power the heat pump delivers to the sink (the process), in kW.",

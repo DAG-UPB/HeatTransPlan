@@ -5,7 +5,12 @@
  *  Every chart follows the width of its own box, not only the window: Plotly's
  *  `responsive` reacts to window resizes alone, so a box that changed width
  *  for another reason (a panel opening, a scrollbar, two columns becoming
- *  one) left the chart at its old size, over its neighbours. */
+ *  one) left the chart at its old size, over its neighbours.
+ *
+ *  The chart's box also gets the chart's height. On a resize, Plotly's
+ *  `responsive` sets the drawing to 100 % of the box's height; a box with no
+ *  height of its own is then 0 px tall, and the chart, still drawn full size,
+ *  lay over everything below it. */
 
 import { useEffect, useState } from 'react';
 import type { PlotProps } from 'react-plotly.js';
@@ -44,9 +49,14 @@ export default function Plot(props: PlotProps) {
     };
   }, [el]);
 
+  // The layout's height (Plotly's default 450 px without one), unless the
+  // caller sized the box itself.
+  const height = props.style?.height ?? props.layout?.height ?? 450;
+
   return (
     <PlotlyChart
       {...props}
+      style={{ ...props.style, height }}
       onInitialized={(figure, div) => {
         setEl(div);
         onInitialized?.(figure, div);

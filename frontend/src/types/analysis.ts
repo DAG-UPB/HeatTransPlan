@@ -170,6 +170,13 @@ export interface OptimizedIntegrationPoint {
 
 /** Why the optimization found little or nothing. */
 export interface HPIOptimizationDiagnostics {
+  // The size of the search (backend models/analysis.py).
+  heat_pumps?: number;
+  grid_points?: number;
+  combinations?: number;
+  cop_evaluations?: number;
+  cop_predictions?: number;
+  duration_ms?: number | null;
   source_T_min?: number | null;
   source_T_max?: number | null;
   source_Q_max?: number | null;

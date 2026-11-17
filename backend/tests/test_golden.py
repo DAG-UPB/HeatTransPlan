@@ -24,6 +24,8 @@ EXAMPLES = sorted(p.name for p in EXAMPLES_DIR.glob("*.json"))
 _UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 _SET = re.compile(r"\{('[^{}]*')\}")
 _BLOB = re.compile(r"[A-Za-z0-9+/=]{400,}")
+# How long a search took (diagnostics.duration_ms) differs on every run.
+_DURATION = re.compile(r'"duration_ms": [0-9.]+')
 _STAMP = re.compile(r"\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?|\d{8}_\d{6}")
 
 
@@ -33,6 +35,7 @@ def _normalize(text: str) -> str:
     text = _BLOB.sub(lambda m: "<blob " + hashlib.sha256(m.group().encode()).hexdigest()[:16] + ">", text)
     # The CSV import names the missing columns as a Python set: random order.
     text = _SET.sub(lambda m: "{" + ", ".join(sorted(m.group(1).split(", "))) + "}", text)
+    text = _DURATION.sub('"duration_ms": "<time>"', text)
     return _STAMP.sub("<time>", _UUID.sub("<uuid>", text))
 
 

@@ -1421,3 +1421,15 @@
   font-variant-numeric: tabular-nums;
   color: var(--text-main);
 }
+
+/* The size of the heat pump search, above its table and chart. */
+.pa-search-size {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--primary);
+  background: var(--well);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
