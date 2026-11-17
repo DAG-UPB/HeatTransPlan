@@ -16,10 +16,20 @@ services:
       API_KEYS: ${API_KEYS:-}
     # Hardened: read-only except /tmp, no special rights, no way to gain any.
     read_only: true
+    # /tmp lives in memory: uploads over 1 MB wait there while a request reads
+    # them, and matplotlib keeps its font cache there. Sized, so it cannot
+    # take the machine's memory.
     tmpfs:
-      - /tmp
+      - /tmp:size=256m
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
+    # Idles at a few hundred MB; an optimisation of a large site takes about
+    # 500 MB more, a COP training run some hundreds. The host (15 GB) also runs
+    # the test stack, so one runaway request stops here instead of the machine.
+    mem_limit: 3g
+    memswap_limit: 3g
+    cpus: 2.0
+    pids_limit: 256
     logging:
       driver: "json-file"
       options:
@@ -52,6 +62,10 @@ services:
     cap_drop: [ALL]
     cap_add: [NET_BIND_SERVICE]
     security_opt: ["no-new-privileges:true"]
+    # Serves files only: a little memory and CPU is all it ever needs.
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 100
     logging:
       driver: "json-file"
       options:
@@ -70,6 +84,10 @@ services:
     cap_drop: [ALL]
     cap_add: [NET_BIND_SERVICE]
     security_opt: ["no-new-privileges:true"]
+    # Serves files only: a little memory and CPU is all it ever needs.
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 100
     logging:
       driver: "json-file"
       options:
@@ -85,6 +103,10 @@ services:
     cap_drop: [ALL]
     cap_add: [NET_BIND_SERVICE]
     security_opt: ["no-new-privileges:true"]
+    # Holds up to 50 MB uploads on their way to the backend.
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 200
     depends_on:
       - frontend
       - backend
@@ -104,6 +126,16 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+# IPv6 on the app's own network. Without it docker-proxy answers IPv6
+# visitors and passes them on over IPv4, so Caddy sees every one of them as
+# the network's gateway (172.18.0.1): one shared rate-limit bucket. With it,
+# IPv6 is forwarded by NAT and Caddy sees the visitor's address. Docker picks
+# a private (ULA) subnet itself, so stacks from this file do not clash.
+# Takes effect once the network is made anew (docker compose down, then up).
+networks:
+  default:
+    enable_ipv6: true
+
 volumes:
   activity_log:
   caddy_data:

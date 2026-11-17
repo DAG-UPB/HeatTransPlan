@@ -19,7 +19,10 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 
-from app.models.cop_training import CAT_ROLES, SINK_CAP, TEMP_ROLES, ColumnMapping, CustomCopModelSpec
+from app.models.cop_training import (
+    CAT_ROLES, ENVELOPE_COP_MAX, ENVELOPE_T_MAX, ENVELOPE_T_MIN, MAX_CATEGORIES, SINK_CAP, TEMP_ROLES,
+    ColumnMapping, CustomCopModelSpec,
+)
 from app.services.cop_training.data import MAX_ROWS, MIN_ROWS, DataError, _numeric
 
 # The shipped models' set-up (cop_analysis/train_cop_4t.py): the same data
@@ -151,6 +154,12 @@ def train(df: pd.DataFrame, mapping: ColumnMapping, name: str = "My COP model",
         raise DataError("the polynomial degree must be 2 or 3")
     data, temps, cats, dropped, sampled_from = _prepare(df, mapping)
     categories = {r: sorted(data[r].unique().tolist()) for r in cats}
+    # Each value becomes an input of its own (one-hot): a column of free text
+    # would make the network, and every heat pump it offers, enormous.
+    for r, values in categories.items():
+        if len(values) > MAX_CATEGORIES:
+            raise DataError(f"The {r} column has {len(values)} different values; "
+                            f"at most {MAX_CATEGORIES} are supported.")
     train_df, test_df = train_test_split(data, test_size=TEST_SHARE, random_state=SEED)
 
     if kind == "nn":
@@ -189,8 +198,7 @@ def train(df: pd.DataFrame, mapping: ColumnMapping, name: str = "My COP model",
         temps=temps,
         cats=cats,
         categories=categories,
-        envelope={**data_env, "T_sink_max": min(data_env["T_sink_max"], SINK_CAP),
-                  "T_sink_min": min(data_env["T_sink_min"], SINK_CAP)},
+        envelope=_offered_envelope(data_env),
         data_envelope=data_env,
         combos=[{k: str(v) for k, v in c.items()} for c in combos][:200],
         metrics=metrics,
@@ -215,6 +223,23 @@ def train(df: pd.DataFrame, mapping: ColumnMapping, name: str = "My COP model",
     }
 
 
+def _offered_envelope(data_env: Dict[str, float]) -> Dict[str, float]:
+    """Where the model is offered by default: the data's range, the sink
+    capped (SINK_CAP), and inside the limits any envelope must keep."""
+    env = {**data_env, "T_sink_max": min(data_env["T_sink_max"], SINK_CAP),
+           "T_sink_min": min(data_env["T_sink_min"], SINK_CAP)}
+    for key in ("T_source_min", "T_source_max", "T_sink_min", "T_sink_max"):
+        env[key] = min(max(env[key], ENVELOPE_T_MIN), ENVELOPE_T_MAX)
+    for key in ("cop_min", "cop_max"):
+        env[key] = min(max(env[key], 0.0), ENVELOPE_COP_MAX)
+    return env
+
+
+# Rows per forward pass: the hidden layers of a whole search grid at once
+# would take gigabytes, this many take a few megabytes.
+PREDICT_CHUNK = 8192
+
+
 def predict(spec: CustomCopModelSpec, temps: Dict[str, np.ndarray], cats: Dict[str, str]) -> np.ndarray:
     """COP from the exported numbers: the network's forward pass, or the
     regression's terms plus its category offsets."""
@@ -231,16 +256,19 @@ def predict(spec: CustomCopModelSpec, temps: Dict[str, np.ndarray], cats: Dict[s
             y = y + values.get(cats.get(r, ""), 0.0)
         return y
     x_t = (np.stack([np.asarray(temps[r], float) for r in spec.temps], axis=1) - spec.mean) / spec.scale
-    parts = [x_t]
-    for r in spec.cats:
-        hot = np.array([1.0 if v == cats.get(r) else 0.0 for v in spec.categories.get(r, [])])
-        parts.append(np.tile(hot, (n, 1)))
-    a = np.hstack(parts)
-    for i, layer in enumerate(spec.layers):
-        a = a @ np.asarray(layer.W) + np.asarray(layer.b)
-        if i < len(spec.layers) - 1:
-            a = np.maximum(a, 0)  # relu, scikit-learn's default
-    return a[:, 0]
+    hot = [np.array([1.0 if v == cats.get(r) else 0.0 for v in spec.categories.get(r, [])])
+           for r in spec.cats]
+    layers = [(np.asarray(layer.W), np.asarray(layer.b)) for layer in spec.layers]
+    out = np.empty(n)
+    for start in range(0, n, PREDICT_CHUNK):
+        x = x_t[start:start + PREDICT_CHUNK]
+        a = np.hstack([x] + [np.tile(h, (len(x), 1)) for h in hot])
+        for i, (W, b) in enumerate(layers):
+            a = a @ W + b
+            if i < len(layers) - 1:
+                a = np.maximum(a, 0)  # relu, scikit-learn's default
+        out[start:start + len(x)] = a[:, 0]
+    return out
 
 
 def alternatives(spec: CustomCopModelSpec, pinch: Any, deltaT_evap: float, deltaT_cond: float,

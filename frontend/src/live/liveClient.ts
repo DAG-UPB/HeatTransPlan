@@ -4,11 +4,17 @@
  *  Off until the user switches it on. Nothing of the project is kept on the
  *  server: the page holds the only copy. While connected the page runs the
  *  commands the AI sends (reading the project or what the page shows,
- *  applying an edit, ...) and answers each one. */
+ *  applying an edit, ...) and answers each one; before one that deletes or
+ *  replaces it asks the user (runAiCommand).
+ *
+ *  The session code is what the AI addresses the page by. The page's own key
+ *  to its session is the page token, which only this tab gets: only it can
+ *  listen, answer, pause, resume and end. It is kept in sessionStorage so a
+ *  reload of this tab keeps the session. */
 
 import { create } from 'zustand';
 import client, { API_BASE, authHeaders } from '../api/client';
-import { runCommand } from './commands';
+import { runAiCommand } from './commands';
 
 type Status = 'off' | 'connecting' | 'on' | 'error';
 
@@ -31,6 +37,8 @@ interface LiveState {
 }
 
 const LOG_LENGTH = 50;
+/** The header that shows a request comes from the page that owns the session. */
+export const PAGE_TOKEN_HEADER = 'X-Live-Page-Token';
 
 export const useLiveStore = create<LiveState>(() => ({
   status: 'off',
@@ -42,8 +50,16 @@ export const useLiveStore = create<LiveState>(() => ({
 }));
 
 const SAVED = 'heattransplan_live_session';
+/** The server's answer to a token that is not the session's (routers/live.py). */
+const NOT_OURS = 'Only the page that opened this session';
+
+interface Saved {
+  session_id: string;
+  page_token: string;
+}
 
 let abort: AbortController | null = null;
+let pageToken: string | null = null;
 // AI commands running now: the server's activity log (X-Actor) tells the
 // requests they make from the user's.
 let aiCommands = 0;
@@ -53,20 +69,41 @@ client.interceptors.request.use((cfg) => {
 });
 
 const set = (patch: Partial<LiveState>) => useLiveStore.setState(patch);
+const own = () => ({ headers: { [PAGE_TOKEN_HEADER]: pageToken ?? '' } });
+
+function loadSaved(): Saved | null {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(SAVED) ?? 'null') as Saved | null;
+    return saved?.session_id && saved.page_token ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function forgetSaved() {
+  try {
+    sessionStorage.removeItem(SAVED);
+  } catch {
+    // Storage blocked: nothing was kept.
+  }
+}
 
 async function openSession(): Promise<{
   session_id: string;
   project_id: string;
+  page_token: string;
   paused?: boolean;
 }> {
   // A reload of the same tab keeps its session, and with it the AI's link.
-  const saved = sessionStorage.getItem(SAVED);
+  const saved = loadSaved();
   if (saved) {
     try {
-      const { data } = await client.get(`/api/live/sessions/${saved}`);
-      return data;
+      const { data } = await client.get(`/api/live/sessions/${saved.session_id}`, {
+        headers: { [PAGE_TOKEN_HEADER]: saved.page_token },
+      });
+      return { ...data, page_token: saved.page_token };
     } catch {
-      sessionStorage.removeItem(SAVED);
+      forgetSaved();
     }
   }
   const { data } = await client.post('/api/live/sessions');
@@ -75,22 +112,32 @@ async function openSession(): Promise<{
 
 async function answer(sessionId: string, id: string, body: Record<string, unknown>) {
   try {
-    await client.post(`/api/live/sessions/${sessionId}/commands/${id}/result`, body);
+    await client.post(`/api/live/sessions/${sessionId}/commands/${id}/result`, body, own());
   } catch {
     // The AI stopped waiting; nothing to do.
   }
 }
 
+class Ended extends Error {}
+
 function handleEvent(sessionId: string, type: string, data: Record<string, unknown>) {
-  if (type === 'hello') set({ status: 'on', error: null });
+  if (type === 'hello') set({ status: 'on', error: null, paused: Boolean(data.paused) });
+  else if (type === 'paused') set({ paused: Boolean(data.paused) });
+  else if (type === 'replaced') throw new Ended('This AI session is now open in another tab.');
+  else if (type === 'ended') throw new Ended('The live session has ended.');
   else if (type === 'ai_log') {
     const entry = data as unknown as AiLogEntry;
     set({ log: [...useLiveStore.getState().log, entry].slice(-LOG_LENGTH) });
   } else if (type === 'command') {
     const id = String(data.id);
+    // The server holds commands back while paused; one already on its way is refused too.
+    if (useLiveStore.getState().paused) {
+      void answer(sessionId, id, { ok: false, error: 'The user has paused the AI on this page.' });
+      return;
+    }
     aiCommands++;
     Promise.resolve()
-      .then(() => runCommand(String(data.name), (data.args as Record<string, unknown>) ?? {}))
+      .then(() => runAiCommand(String(data.name), (data.args as Record<string, unknown>) ?? {}))
       .finally(() => aiCommands--)
       .then((result) => answer(sessionId, id, { ok: true, result: result ?? null }))
       .catch((e: unknown) =>
@@ -106,12 +153,15 @@ async function listen(sessionId: string, signal: AbortSignal) {
   while (!signal.aborted) {
     try {
       const res = await fetch(`${API_BASE}/api/live/sessions/${sessionId}/events`, {
-        // After a refusal (token ran out), a fresh page token.
-        headers: await authHeaders(refused),
+        // After a refusal (token ran out), a fresh API page token.
+        headers: { ...(await authHeaders(refused)), [PAGE_TOKEN_HEADER]: pageToken ?? '' },
         signal,
       });
-      refused = res.status === 401 || res.status === 403;
-      if (res.status === 404) throw new Error('The live session has ended.');
+      // 403 is the API key's refusal, or the session's when this tab's token is not its own.
+      const detail = res.status === 403 ? await res.text() : '';
+      refused = res.status === 401 || (res.status === 403 && !detail.includes(NOT_OURS));
+      if (res.status === 404 || detail.includes(NOT_OURS))
+        throw new Ended('The live session has ended.');
       if (!res.ok || !res.body) throw new Error(`Live connection failed (${res.status}).`);
       wait = 1000;
       const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
@@ -131,8 +181,11 @@ async function listen(sessionId: string, signal: AbortSignal) {
       }
     } catch (e) {
       if (signal.aborted) return;
-      if (e instanceof Error && e.message.includes('ended')) {
-        set({ status: 'error', error: e.message });
+      if (e instanceof Ended) {
+        // Not this tab's any more: forget it, so a reload starts afresh.
+        forgetSaved();
+        pageToken = null;
+        set({ status: 'error', error: e.message, paused: false });
         return;
       }
     }
@@ -148,9 +201,14 @@ export async function connectLive() {
     return;
   set({ status: 'connecting', error: null });
   try {
-    const { session_id, project_id, paused } = await openSession();
-    sessionStorage.setItem(SAVED, session_id);
-    set({ sessionId: session_id, projectId: project_id, paused: Boolean(paused) });
+    const { session_id, project_id, page_token, paused } = await openSession();
+    pageToken = page_token;
+    try {
+      sessionStorage.setItem(SAVED, JSON.stringify({ session_id, page_token }));
+    } catch {
+      // Storage blocked: a reload then starts a new session.
+    }
+    set({ sessionId: session_id, projectId: project_id, paused: Boolean(paused), log: [] });
     abort = new AbortController();
     void listen(session_id, abort.signal);
   } catch (e) {
@@ -160,22 +218,24 @@ export async function connectLive() {
 
 export async function disconnectLive() {
   const { sessionId } = useLiveStore.getState();
+  const headers = own();
   abort?.abort();
   abort = null;
-  sessionStorage.removeItem(SAVED);
+  forgetSaved();
   set({ status: 'off', sessionId: null, projectId: null, error: null, paused: false, log: [] });
-  if (sessionId) await client.delete(`/api/live/sessions/${sessionId}`).catch(() => {});
+  if (sessionId) await client.delete(`/api/live/sessions/${sessionId}`, headers).catch(() => {});
+  pageToken = null;
 }
 
 /** Pause or resume the AI on this page; the server refuses it while paused. */
 export async function setAiPaused(paused: boolean) {
   const { sessionId } = useLiveStore.getState();
   if (!sessionId) return;
-  const { data } = await client.put(`/api/live/sessions/${sessionId}/pause`, { paused });
+  const { data } = await client.put(`/api/live/sessions/${sessionId}/pause`, { paused }, own());
   set({ paused: Boolean(data.paused) });
 }
 
 /** After a reload, reconnect a tab that was connected. */
 export function resumeLive() {
-  if (sessionStorage.getItem(SAVED)) void connectLive();
+  if (loadSaved()) void connectLive();
 }

@@ -328,7 +328,7 @@
     "added_process": "Process {{n}} added"
   },
   "optimization": {
-    "search_size": "Searched {{combinations}} combinations ({{pumps}} heat pumps × {{pairs}} pairs of source and sink temperature). The COP was computed for {{evaluations}} of them, where the heat pump can run; {{predictions}} of these are predictions of the COP model, the rest archetype formulas. Result: {{feasible}} feasible points.",
+    "search_size": "Searched {{combinations}} combinations ({{pumps}} heat pumps and reference models × {{pairs}} pairs of source and sink temperature). The COP was computed for {{evaluations}} of them, where the heat pump can run; {{predictions}} of these are predictions of a COP model, the rest come from formulas (archetypes, the Carnot reference or your own). Result: {{feasible}} feasible points.",
     "search_time": "Computed in {{seconds}} s.",
     "tooltip_refrigerant_type": "Classification of the refrigerant used. Natural refrigerants such as ammonia (R717) and CO₂ (R744) have a low global warming potential (GWP) but can be toxic and/or flammable. Conventional synthetic refrigerants such as HFCs and HFOs are subject to regulations because of their environmental impact.",
     "tooltip_cop": "Coefficient of performance (<span class='notranslate'>COP</span>) = heating power delivered / electrical power used. A higher <span class='notranslate'>COP</span> means the heat pump runs more efficiently.",
@@ -342,19 +342,23 @@
       "title": "Integration with Heat Pump model and optimization",
       "instruction": "Click on any column header to sort. Click on any point in the chart to inspect its details and add it to the table.",
       "headers": {
-        "refrigerant_type": "REFRIG.",
-        "medium_sink": "MEDIUM SINK",
         "cop": "COP",
-        "q_sink": "Q_sink (kW)",
-        "q_source": "Q_source (kW)",
-        "t_sink": "T_sink (°C)",
-        "t_source": "T_source (°C)",
         "refrigerant": "REFRIGERANT",
-        "hp_stages": "NR. COMPRESSORS",
-        "t_vorlauf_quelle": "SOURCE SUPPLY (°C)",
-        "t_ruecklauf_senke": "SINK RETURN (°C)",
         "entry_type": "TYPE",
         "w_el": "P_el (kW)"
+      },
+      "groups": {
+        "heat_pump": "Heat pump",
+        "sink": "Sink",
+        "source": "Source"
+      },
+      "sub": {
+        "compressors": "COMPR.",
+        "refrigerant_type": "REFRIG. TYPE",
+        "medium": "MEDIUM",
+        "q": "Q (kW)",
+        "temp": "TEMP. (°C)",
+        "temp_shifted": "TEMP. SHIFTED ({{k}} K)"
       },
       "filters": {
         "all": "All",
@@ -602,7 +606,8 @@
     "apply": "Apply",
     "fix_formula_first": "Fix the formula first",
     "interval_example": "Interval example",
-    "interval_example_title": "Conditional logic for intervals (formatted for readability)"
+    "interval_example_title": "Conditional logic for intervals (formatted for readability)",
+    "built_in_title": "Built-in formulas — click to use"
   },
   "help": {
     "title": "Analysis Guide",
@@ -1074,7 +1079,7 @@
     "setup_intro": "Any AI agent that supports MCP (Model Context Protocol) can work with HeatTransPlan. Nothing to install.",
     "setup_add": "Add HeatTransPlan to your agent as an MCP server with this address:",
     "setup_key": "This server needs an API key: give it to the agent as the header X-API-Key (or Authorization: Bearer <key>).",
-    "setup_connect": "Click Connect AI and tell the agent the session code, e.g. \"Use HeatTransPlan session AB12CD\". It then sees and controls this page until you disconnect.",
+    "setup_connect": "Click Connect AI and tell the agent the session code, e.g. \"Use HeatTransPlan session 3f9a1c7e\". It then sees and controls this page until you disconnect.",
     "setup_files": "Without Connect AI the agent can only explain the method and read your documents; it cannot see, create or change anything. Once you disconnect or close the page, that is so again.",
     "setup_guided": "Then ask the agent, for example: \"Guide me through a HeatTransPlan study.\" It goes page by page, asks for what it needs, and reads the Word, PowerPoint and Excel files you attach or numbers you paste.",
     "setup_local": "This app runs on this computer (http): use an agent that runs here too, such as a desktop app, a code editor or a terminal agent. Agents in the cloud, such as web chats, cannot reach it.",
@@ -1099,6 +1104,14 @@
     "confirm_remove_subprocess_plan": "Remove a diagram's background plan?",
     "confirm_delete_scenario": "Delete a saved scenario?",
     "confirm_other": "Allow the AI to do this: {{name}}?",
+    "confirm_set_project_empty": "Replace the whole project on this page with an empty one? All processes, streams and saved scenarios on it are removed.",
+    "confirm_delete_scenario_named": "Delete the saved scenario “{{name}}”?",
+    "confirm_remove_subprocess_plan_named": "Remove the background plan of “{{name}}”?",
+    "confirm_replace_subprocess_plan_named": "Replace the background plan of “{{name}}”?",
+    "confirm_replace_site_plan": "Replace the site plan on the map?",
+    "confirm_edit_removes": "This step deletes processes, subprocesses or streams.",
+    "confirm_edit_removes_more": "… and {{name}} more.",
+    "confirm_note": "This page checked what the request would delete or replace. Nothing is deleted or replaced without your permission, whoever asks.",
     "setup_where": "In your agent's settings for MCP servers (in some agents: connectors or tools), add a server of type HTTP, also called streamable HTTP, with this address. No command to run, nothing to install.",
     "setup_examples": "Examples: Claude, ChatGPT, Mistral, Gemini",
     "setup_docs": "Full guide in the documentation: setup, all tools, security",
@@ -1207,9 +1220,26 @@
     "page_help": "Explain this page"
   },
   "hp_view": {
-    "title": "Heat pump temperatures",
-    "open": "Model 2 temps",
+    "title": "COP model",
+    "open": "COP model",
     "open_hint": "The 2-temperature COP model (source out, sink out): the heat pump drawn, values can be tried and the COP is shown",
+    "tab_pump": "Heat pump",
+    "tab_model": "COP model",
+    "model": {
+      "inputs": "INPUTS",
+      "output": "OUTPUT",
+      "name": "COP model",
+      "kind_2t": "trained, 2 temperatures",
+      "cop_name": "Coefficient of performance",
+      "cop_meaning": "COP = heat delivered ÷ electricity used. {{cop}} means: 1 kW of electricity gives {{cop}} kW of heat.",
+      "cop_meaning_none": "COP = heat delivered ÷ electricity used.",
+      "refrigerant": "Refrigerant",
+      "stages": "Compressors",
+      "medium": "Sink medium",
+      "medium_short": "Medium",
+      "one_column_note": "Refrigerant and compressors are one model input (e.g. \"Butane_2\")"
+    },
+    "morph_label": "From the heat pump to the COP model",
     "pump": "Heat pump",
     "scale": "Temperatures on the shifted scale, as the optimization uses them (ΔTmin/2 = {{half}} K).",
     "circuit1": "Circuit 1 · waste heat",

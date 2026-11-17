@@ -71,7 +71,8 @@ The server stores nothing about keys: a key is signed with `API_KEY_SECRET` (HMA
 | POST | `/api/live/sessions/{sid}/commands/{cid}/result` | The page's answer |
 | PUT | `/api/live/sessions/{sid}/pause` | The user pauses or resumes the AI |
 | GET | `/api/live/pages/{code}` | The open, connected page for a code (404 none, 423 paused) |
-| POST | `/api/live/pages/{code}/log` | Note what the AI changed (activity list, server log) |
+
+**Two keys.** Creating a session returns the code (`session_id`), which the user gives the AI, and a `page_token`, which only the page that created it receives. The code lets the AI find the page and send it commands, nothing more. Reading the event stream, answering commands, pausing, resuming and ending the session need the page token in the `X-Live-Page-Token` header (403 without it); only one page listens at a time. So whoever learns the code can neither read along nor answer in the page's place nor lift a pause. The activity list is kept by the server itself, from the commands the page actually carried out.
 
 ### Example: analyse a project in one call
 

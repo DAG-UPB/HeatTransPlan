@@ -6,7 +6,7 @@ import SubprocessCard from './SubprocessCard';
 import { useUIStore } from '../../store/uiStore';
 import { useProjectStore } from '../../store/projectStore';
 import { useAnalysisStore } from '../../store/analysisStore';
-import { removeProcesses } from '../../utils/processIndex';
+import { reindexPlans, removeProcesses } from '../../utils/processIndex';
 import './ProcessGroupList.css';
 
 interface GroupCoords {
@@ -29,6 +29,8 @@ interface Props {
   placementTarget: string | null;
   subprocessMapExpanded: Record<number, boolean>;
   onSubprocessMapToggle: (gIdx: number) => void;
+  /** A process was deleted: what is kept by process index moves up by one. */
+  onGroupDeleted?: (gIdx: number) => void;
 
   expandedGroups?: Set<number>;
   onExpandedGroupsChange?: (set: Set<number>) => void;
@@ -47,6 +49,7 @@ export default function ProcessGroupList({
   placementTarget,
   subprocessMapExpanded,
   onSubprocessMapToggle,
+  onGroupDeleted,
 
   expandedGroups = new Set(),
   onExpandedGroupsChange,
@@ -104,6 +107,14 @@ export default function ProcessGroupList({
     useAnalysisStore.getState().setSelectedStreams(next.selection);
   };
 
+  // Diagram backgrounds follow their process or subprocess to its new index;
+  // a deleted one's background goes with it.
+  const dropPlans = (group: number | null, subs: number[]) => {
+    const store = useProjectStore.getState();
+    const plans = store.state.canvas_plans;
+    if (plans && Object.keys(plans).length) store.setCanvasPlans(reindexPlans(plans, group, subs));
+  };
+
   const deleteGroup = (gIdx: number) => {
     const newGroups = groups.filter((_, i) => i !== gIdx);
     const newNames = groupNames.filter((_, i) => i !== gIdx);
@@ -117,8 +128,15 @@ export default function ProcessGroupList({
       reindexed[newIdx] = newCoords[oldIdx];
     });
     applyRemoval(groups[gIdx] ?? [], newGroups);
+    dropPlans(gIdx, groups[gIdx] ?? []);
     onGroupNamesChange(newNames);
     onGroupCoordinatesChange(reindexed);
+    // The open card and diagram follow their process to its new index; the
+    // deleted one's close instead of showing another process in its place.
+    onExpandedGroupsChange?.(
+      new Set([...expandedGroups].filter((i) => i !== gIdx).map((i) => (i > gIdx ? i - 1 : i)))
+    );
+    onGroupDeleted?.(gIdx);
     setConfirmDelete(null);
   };
 
@@ -162,6 +180,7 @@ export default function ProcessGroupList({
       [subIdx],
       groups.map((g, i) => (i === gIdx ? remaining : g))
     );
+    dropPlans(null, [subIdx]);
   };
 
   return (

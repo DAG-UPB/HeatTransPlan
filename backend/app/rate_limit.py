@@ -7,8 +7,11 @@ key gets these limits; the endpoints that need no key count per address.
 
 Behind Caddy the visitor's address comes from X-Forwarded-For (uvicorn
 --proxy-headers; the backend port is not published). The MCP server's own
-calls into the backend carry INTERNAL_TOKEN and do not count: the agent's
-request to /mcp is what counts. RATE_LIMIT=0 switches it off (tests).
+calls into the backend carry INTERNAL_TOKEN and do not count as requests:
+the agent's request to /mcp is what counts. They do count as guesses: an
+unknown code the agent tried counts against the agent's address, which
+those calls name in CALLER_HEADER (trusted only with the token), and its
+lock-out stops them too. RATE_LIMIT=0 switches it off (tests).
 
 ponytail: counts in memory, one process (as live sessions); a shared store
 such as Redis when the backend runs on several.
@@ -16,6 +19,8 @@ such as Redis when the backend runs on several.
 
 from __future__ import annotations
 
+import hmac
+import ipaddress
 import json
 import os
 import secrets
@@ -25,6 +30,8 @@ from collections import defaultdict, deque
 ENABLED = os.getenv("RATE_LIMIT", "1").lower() not in ("0", "false", "off", "no")
 INTERNAL_TOKEN = secrets.token_urlsafe(32)
 INTERNAL_HEADER = b"x-heattransplan-internal"
+# The address of the agent an internal call is made for (app/mcp_http.py).
+CALLER_HEADER = b"x-heattransplan-caller"
 
 # (path prefix, requests, seconds): the first prefix that matches counts.
 RULES = [
@@ -40,6 +47,20 @@ RULES = [
 # Unknown Connect AI codes (404 under /api/live/) before that visitor's live
 # requests are refused for a while.
 MISSES = (30, 600)
+
+
+def visitor(address: str) -> str:
+    """Who is counted. An IPv6 visitor usually holds a whole /64 and can pick
+    any address in it, so the /64 is counted, not the single address."""
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return address
+    if ip.version == 4:
+        return str(ip)
+    if ip.ipv4_mapped is not None:  # ::ffff:a.b.c.d is an IPv4 visitor
+        return str(ip.ipv4_mapped)
+    return str(ipaddress.ip_network(f"{ip}/64", strict=False))
 
 
 class RateLimit:
@@ -69,9 +90,15 @@ class RateLimit:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http" or not self.enabled:
             return await self.app(scope, receive, send)
-        if dict(scope["headers"]).get(INTERNAL_HEADER) == INTERNAL_TOKEN.encode():
-            return await self.app(scope, receive, send)
-        ip = (scope.get("client") or ("unknown",))[0]
+        headers = dict(scope["headers"])
+        internal = hmac.compare_digest(headers.get(INTERNAL_HEADER, b""), INTERNAL_TOKEN.encode())
+        if internal:
+            caller = headers.get(CALLER_HEADER, b"").decode("latin-1")
+            if not caller:
+                return await self.app(scope, receive, send)
+            ip = visitor(caller)
+        else:
+            ip = visitor((scope.get("client") or ("unknown",))[0])
         # The key's id when app/api_keys.py checked one, else the address.
         who = scope.get("heattransplan.client") or ip
         path = scope["path"]
@@ -82,7 +109,8 @@ class RateLimit:
         live = path.startswith("/api/live/")
         if live:
             wait = self._full(("miss", ip), *self.misses, now)
-        rule = next((r for r in self.rules if path.startswith(r[0])), None)
+        # The agent's own request to /mcp counted already.
+        rule = None if internal else next((r for r in self.rules if path.startswith(r[0])), None)
         if not wait and rule:
             wait = self._full((rule[0], who), rule[1], rule[2], now)
         if wait:

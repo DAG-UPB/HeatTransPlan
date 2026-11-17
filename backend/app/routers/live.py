@@ -1,12 +1,17 @@
 """
 Live router — an open page registers here so an AI can watch and drive it.
 See app/services/live.py for how sessions, events and commands fit together.
+
+Who may do what: the page (its page token, header X-Live-Page-Token) listens,
+answers, pauses, resumes and ends; the AI (the code alone) finds the page
+and sends it commands, which the page runs, asking its user first before
+anything that deletes or replaces.
 """
 
 import asyncio
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -14,28 +19,25 @@ from app.services import live
 
 router = APIRouter()
 
+PAGE_TOKEN = "X-Live-Page-Token"
+
 
 class Command(BaseModel):
     name: str = Field(max_length=64)
     args: Dict[str, Any] = Field(default_factory=dict)
     timeout: float = Field(30.0, gt=0, le=300)
+    # The MCP tool that sent it, for the page's activity list.
+    tool: Optional[str] = Field(None, max_length=64, pattern=r"^[a-z_]+$")
 
 
 class Pause(BaseModel):
     paused: bool
 
 
-class LogEntry(BaseModel):
-    tool: str = Field(max_length=64)
-    detail: str = Field("", max_length=500)
-    # The argument names alone, for the anonymous activity log.
-    fields: list[str] = Field(default_factory=list, max_length=40)
-
-
 class CommandResult(BaseModel):
     ok: bool
     result: Any = None
-    error: Optional[str] = None
+    error: Optional[str] = Field(None, max_length=2000)
 
 
 def _session(session_id: str) -> live.Session:
@@ -45,13 +47,25 @@ def _session(session_id: str) -> live.Session:
     return session
 
 
+def _own(session_id: str, token: Optional[str]) -> live.Session:
+    """The session, for its page only: the code alone is not enough."""
+    session = _session(session_id)
+    if not session.is_page(token):
+        raise HTTPException(403, "Only the page that opened this session may do this")
+    return session
+
+
 @router.post("/sessions")
 async def create_session():
     """Start a session for a page. Nothing of its project is sent or kept:
     the AI reads and edits it through commands the page runs. project_id is
-    only a second name the AI can address the page by."""
-    session = live.create()
-    return session.summary()
+    only a second name the AI can address the page by. page_token is the
+    page's own key to its session; it is returned only here."""
+    try:
+        session = live.create()
+    except live.TooManySessions as exc:
+        raise HTTPException(503, str(exc)) from exc
+    return {**session.summary(), "page_token": session.page_token}
 
 
 def _page(key: str) -> live.Session:
@@ -72,38 +86,40 @@ async def connected_page(key: str):
 
 
 @router.post("/pages/{key}/log")
-async def log_ai_action(key: str, entry: LogEntry):
-    """What the AI did, for the page's activity list and the server's log."""
-    return live.record(_page(key), entry.tool, entry.detail, entry.fields)
+async def log_ai_action(key: str):
+    """Gone: the server notes the AI's activity itself, from the commands it
+    passed on. 410, not 404, so older MCP servers calling it do not count as
+    guessing codes."""
+    raise HTTPException(410, "The server records the AI's activity itself")
 
 
 @router.put("/sessions/{session_id}/pause")
-async def pause(session_id: str, body: Pause):
+async def pause(session_id: str, body: Pause, token: Optional[str] = Header(None, alias=PAGE_TOKEN)):
     """The user pauses or resumes the AI on their page."""
-    session = _session(session_id)
-    session.paused = body.paused
+    session = _own(session_id, token)
+    live.set_paused(session, body.paused)
     return {"paused": session.paused}
 
 
 @router.get("/sessions/{session_id}")
-async def get_session(session_id: str):
+async def get_session(session_id: str, token: Optional[str] = Header(None, alias=PAGE_TOKEN)):
     """The session (a reloaded page uses it to reconnect)."""
-    return _session(session_id).summary()
+    return _own(session_id, token).summary()
 
 
 @router.delete("/sessions/{session_id}")
-async def delete_session(session_id: str):
+async def delete_session(session_id: str, token: Optional[str] = Header(None, alias=PAGE_TOKEN)):
     """Disconnect: the session ends."""
-    if not live.end(session_id):
-        raise HTTPException(404, "Live session not found")
+    live.end(_own(session_id, token).id)
     return {"deleted": True}
 
 
 @router.get("/sessions/{session_id}/events")
-async def session_events(session_id: str):
+async def session_events(session_id: str, token: Optional[str] = Header(None, alias=PAGE_TOKEN)):
     """Server-sent events for the page: `command` when it should run one,
-    `ai_log` when the AI did something."""
-    session = _session(session_id)
+    `ai_log` when the AI did something, `paused` when that changed,
+    `replaced` when another listener took over, `ended`."""
+    session = _own(session_id, token)
     return StreamingResponse(
         live.events(session),
         media_type="text/event-stream",
@@ -116,11 +132,14 @@ async def run_command(session_id: str, command: Command):
     """Run a command on the page and wait for its answer."""
     session = _session(session_id)
     try:
-        result = await live.send_command(session, command.name, command.args, command.timeout)
+        result = await live.send_command(session, command.name, command.args, command.timeout,
+                                         command.tool)
     except live.SessionNotConnected as exc:
         raise HTTPException(409, str(exc)) from exc
     except live.SessionPaused as exc:
         raise HTTPException(423, str(exc)) from exc
+    except live.PageBusy as exc:
+        raise HTTPException(503, str(exc)) from exc
     except asyncio.TimeoutError as exc:
         raise HTTPException(504, f"The page did not answer '{command.name}' in time.") from exc
     except RuntimeError as exc:
@@ -129,8 +148,9 @@ async def run_command(session_id: str, command: Command):
 
 
 @router.post("/sessions/{session_id}/commands/{command_id}/result")
-async def post_result(session_id: str, command_id: str, body: CommandResult):
+async def post_result(session_id: str, command_id: str, body: CommandResult,
+                      token: Optional[str] = Header(None, alias=PAGE_TOKEN)):
     """The page's answer to a command."""
-    if not live.resolve(_session(session_id), command_id, body.ok, body.result, body.error):
-        raise HTTPException(404, "No command is waiting for this answer")
+    if not live.resolve(_own(session_id, token), command_id, body.ok, body.result, body.error):
+        raise HTTPException(409, "No command is waiting for this answer")
     return {"ok": True}

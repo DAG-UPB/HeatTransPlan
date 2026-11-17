@@ -11,8 +11,9 @@ def test_use_is_logged_without_who_or_data(client):
     client.post("/api/io/export-csv", json=state)
     client.post("/api/io/export-csv", json=state, headers={"X-Actor": "ai"})
     client.post("/api/io/export-csv", json=state, headers={"X-Actor": "root"})  # unknown → human
-    sid = client.post("/api/live/sessions").json()["session_id"]
-    client.get(f"/api/live/sessions/{sid}")  # reads are not logged
+    created = client.post("/api/live/sessions").json()
+    sid = created["session_id"]
+    client.get(f"/api/live/sessions/{sid}", headers={"X-Live-Page-Token": created["page_token"]})  # reads are not logged
     session = live.get(sid)
     live.record(session, "add_stream", 'name=Wort cooler, t_in=95, notes="a, b=c"',
                 ["name", "t_in", "notes", "Wort cooler 95"])  # a value as a name is dropped
@@ -28,7 +29,7 @@ def test_use_is_logged_without_who_or_data(client):
     assert rows[0][3] == 200
     assert rows[4][5] == "name, t_in, notes"
     everything = repr(rows)
-    for secret in (sid, session.project_id, "Brewery", "Smith", "95", "Wort"):
+    for secret in (sid, session.project_id, created["page_token"], "Brewery", "Smith", "95", "Wort"):
         assert secret not in everything
 
 

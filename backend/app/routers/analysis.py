@@ -6,6 +6,7 @@ import math
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
+from pydantic import ValidationError
 
 from app.models.analysis import (
     PinchRequest, PinchResult,
@@ -23,6 +24,7 @@ from app.models.report import ReportRequest
 from app.services.economics import DEFAULTS as ECON_DEFAULTS, PRESETS as ECON_PRESETS, economics, economics_payload
 from app.services.analysis_service import run_pinch, run_hpi, run_status_quo
 from app.services.optimization import run_hpi_optimization
+from app.services.optimization.search import SearchTooLarge
 from app.utils.cop_formula import (
     ALLOWED_FUNCS,
     FORMULA_VARIABLES,
@@ -30,6 +32,7 @@ from app.utils.cop_formula import (
     cop_from_formula,
 )
 from app.services.report import generate_html_report
+from app.services.map_service import MapImageTooLarge
 
 router = APIRouter()
 
@@ -58,6 +61,8 @@ def heat_pump_integration_optimization(request: HPIOptimizationRequest):
     except FormulaError as exc:
         # A bad formula is the caller's mistake, not a server fault.
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except SearchTooLarge as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.get("/cop-point/options")
@@ -92,7 +97,7 @@ def cop_point(request: CopPointRequest):
 
 
 @router.post("/cop-formula/validate", response_model=CopFormulaValidateResult)
-async def validate_cop_formula(request: CopFormulaValidateRequest):
+def validate_cop_formula(request: CopFormulaValidateRequest):
     """Check a user COP formula and evaluate it at one sample point.
 
     Called as the user types, so it must stay cheap — it never touches the
@@ -131,6 +136,18 @@ def project_analysis(request: ProjectAnalysisRequest):
         )
     except FormulaError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except SearchTooLarge as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ValidationError as exc:
+        # The project's streams, checked on their way into the pinch analysis
+        # (app/models/analysis.py): outside the limits there, a clear 422.
+        raise HTTPException(status_code=422, detail=_validation_message(exc)) from exc
+
+
+def _validation_message(exc: ValidationError) -> str:
+    first = exc.errors()[0]
+    where = ".".join(str(p) for p in first.get("loc", ()))
+    return f"{where}: {first.get('msg', 'invalid value')}" if where else first.get("msg", "invalid value")
 
 
 @router.get("/economics/defaults")
@@ -151,7 +168,7 @@ def economic_analysis(request: EconomicsRequest):
 
 
 @router.post("/status-quo", response_model=StatusQuoResult)
-async def status_quo_comparison(request: StatusQuoRequest):
+def status_quo_comparison(request: StatusQuoRequest):
     """Compare current energy demands against pinch minimum."""
     return run_status_quo(request)
 
@@ -159,7 +176,10 @@ async def status_quo_comparison(request: StatusQuoRequest):
 @router.post("/report")
 def generate_report(request: ReportRequest):
     """Generate an HTML report and return it as a downloadable file."""
-    html = generate_html_report(request)
+    try:
+        html = generate_html_report(request)
+    except MapImageTooLarge as exc:
+        raise HTTPException(status_code=413, detail=str(exc)) from exc
     return HTMLResponse(
         content=html,
         headers={
@@ -172,5 +192,8 @@ def generate_report(request: ReportRequest):
 def get_map_preview(request: ReportRequest):
     """Generate process map with drawn streams."""
     from app.services.map_service import generate_process_map_b64
-    b64 = generate_process_map_b64(request)
+    try:
+        b64 = generate_process_map_b64(request)
+    except MapImageTooLarge as exc:
+        raise HTTPException(status_code=413, detail=str(exc)) from exc
     return {"map_b64": b64}

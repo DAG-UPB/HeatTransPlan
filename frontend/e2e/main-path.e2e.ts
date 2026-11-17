@@ -21,19 +21,30 @@ test('example → analysis → report', async ({ page }) => {
 
   // The heat pump view: Example 1's default pump at the two temperatures the
   // 2-temperature model reads.
-  await page.getByRole('button', { name: 'Model 2 temps' }).click();
-  const view = page.getByRole('dialog', { name: 'Heat pump temperatures' });
+  await page.getByRole('button', { name: 'COP model', exact: true }).click();
+  const view = page.getByRole('dialog', { name: 'COP model', exact: true });
   await expect(view.getByLabel('Source outlet temperature')).toHaveValue('58.6');
   await expect(view.getByLabel('Sink outlet temperature')).toHaveValue('113.0');
   await expect(view.getByText('COP 4.34')).toBeVisible({ timeout: 15_000 });
-  // Only the 2-temperature model: no inlet fields, no model pages.
+  // Only the 2-temperature model: no inlet fields.
   await expect(view.getByLabel('Source inlet temperature')).toHaveCount(0);
-  await expect(view.getByRole('tab')).toHaveCount(0);
+  // The slider goes from the pump to the model (no tabs): at the model end the
+  // pump and its fields are gone, back at the pump they are there again.
+  const morph = view.getByRole('slider', { name: 'From the heat pump to the COP model' });
+  await expect(morph).toHaveValue('0');
+  await view.getByRole('button', { name: 'COP model', exact: true }).click();
+  await expect(morph).toHaveValue('1');
+  await expect(view.getByLabel('Source outlet temperature')).toHaveCount(0);
+  await view.getByRole('button', { name: 'Heat pump', exact: true }).click();
+  await expect(morph).toHaveValue('0');
+  await expect(view.getByLabel('Source outlet temperature')).toHaveValue('58.6');
   // The optimization's balance: on both profiles at the pump's own point,
   // short of waste heat once the source may only cool to 66 °C.
   await expect(view.getByText(/Needed and available waste heat match/)).toBeVisible();
   await view.getByLabel('Source outlet temperature').fill('66');
-  await expect(view.getByText(/kW of waste heat short: source-limited/)).toBeVisible({ timeout: 15_000 });
+  await expect(view.getByText(/kW of waste heat short: source-limited/)).toBeVisible({
+    timeout: 15_000,
+  });
   await view.getByRole('button', { name: "Back to the pump's values" }).click();
   await view.getByRole('button', { name: 'Close' }).last().click();
   await expect(view).toBeHidden();

@@ -2,7 +2,6 @@
 sink temperature, keeping the points where source heat and demand balance."""
 
 from __future__ import annotations
-import os
 import time
 import numpy as np
 
@@ -16,7 +15,7 @@ from app.models.analysis import (
 from app.config_optimization import OPTIMIZATION_CONFIG
 from app.services import cop_training
 from app.services.cop_training import model as trained
-from app.modules.pinch.streams import write_streams_csv
+from app.modules.pinch.streams import streams_input
 from app.services.optimization.alternatives import (
     _calculation_details,
     _formula_alternative,
@@ -36,6 +35,31 @@ from app.services.optimization.profiles import (
     _shift,
     _unrecovered_heat,
 )
+
+# Source x sink temperatures the search may span. At the 0.5 K step a site
+# from 20 to 200 °C needs about half a million in the composite mode, where
+# source and sink both span everything; this many is 700 K by 700 K. Each
+# point costs every heat pump's COP, and a few arrays of the grid's size.
+MAX_GRID_POINTS = 2_000_000
+# Multiply-adds a trained network sent with the request may cost in one search
+# (its weights x the points it is rated at, over all its heat pumps): a few
+# seconds of CPU. A model trained here on a real site needs a small part of it.
+MAX_CUSTOM_MODEL_WORK = 5e10
+
+
+class SearchTooLarge(ValueError):
+    """The request asks for a search larger than the limits above."""
+
+
+def _grid_size(t_min: float, t_max: float, step: float) -> int:
+    """Points _make_temperature_grid would give, without making them."""
+    return int((t_max - t_min) / step) + 2 if t_max >= t_min else 0
+
+
+def _network_weights(spec) -> int:
+    if spec is None or spec.kind != "nn":
+        return 0
+    return sum(len(layer.W) * len(layer.b) for layer in spec.layers)
 
 
 def run_hpi_optimization(request: HPIOptimizationRequest | PinchResult) -> HPIOptimizationResult:
@@ -107,262 +131,288 @@ def run_hpi_optimization(request: HPIOptimizationRequest | PinchResult) -> HPIOp
         )
 
     # Reconstruct Pinch for HPI
-    csv_path = write_streams_csv(pinch.T_min, ((sd["cp"], sd["ts"], sd["tt"]) for sd in pinch.streams_data))
-    try:
-        from app.modules.pinch_main import PinchMain
-        from app.modules.heat_pump_integration.heat_pump_integration import HeatPumpIntegration
-        from app.modules.utility.heat_profiles import resolve_profiles
+    # The streams stay in memory: user data never becomes a file.
+    streams = streams_input(pinch.T_min, ((sd["cp"], sd["ts"], sd["tt"]) for sd in pinch.streams_data))
+    from app.modules.pinch_main import PinchMain
+    from app.modules.heat_pump_integration.heat_pump_integration import HeatPumpIntegration
+    from app.modules.utility.heat_profiles import resolve_profiles
 
-        # Pinch draws its matplotlib charts whenever a "draw" key is present,
-        # whatever its value, so pass none: nothing here shows them.
-        pm = PinchMain(csv_path, options={})
-        pm.solve_pinch_for_hpi("EN")
+    # Pinch draws its matplotlib charts whenever a "draw" key is present,
+    # whatever its value, so pass none: nothing here shows them.
+    pm = PinchMain(streams, options={})
+    pm.solve_pinch_for_hpi("EN")
 
-        hpi = HeatPumpIntegration(csv_path, None, pm)
-        hpi.gcc_draw = pm.pinch_analyse.grand_composite_curve
-        hpi.gcc_source, hpi.gcc_sink = resolve_profiles(
-            pm.pinch_analyse, hpi, profile_mode
-        )
-        if d:
-            hpi.gcc_source, hpi.gcc_sink = _shift(hpi.gcc_source, d), _shift(hpi.gcc_sink, d)
+    hpi = HeatPumpIntegration(streams, None, pm)
+    hpi.gcc_draw = pm.pinch_analyse.grand_composite_curve
+    hpi.gcc_source, hpi.gcc_sink = resolve_profiles(
+        pm.pinch_analyse, hpi, profile_mode
+    )
+    if d:
+        hpi.gcc_source, hpi.gcc_sink = _shift(hpi.gcc_source, d), _shift(hpi.gcc_sink, d)
 
-        # Extract the source/sink curves for the selected profile mode
-        src_T_raw = np.array(hpi.gcc_source['T'])
-        src_H_raw = np.array(hpi.gcc_source['H'])
-        t_source_clean, q_avail_clean = _prepare_xy_curve(src_T_raw, src_H_raw, is_source=True)
+    # Extract the source/sink curves for the selected profile mode
+    src_T_raw = np.array(hpi.gcc_source['T'])
+    src_H_raw = np.array(hpi.gcc_source['H'])
+    t_source_clean, q_avail_clean = _prepare_xy_curve(src_T_raw, src_H_raw, is_source=True)
 
-        sink_T_raw = np.array(hpi.gcc_sink['T'])
-        sink_H_raw = np.array(hpi.gcc_sink['H'])
-        t_sink_clean, q_demand_clean = _prepare_xy_curve(sink_T_raw, sink_H_raw, is_source=False)
+    sink_T_raw = np.array(hpi.gcc_sink['T'])
+    sink_H_raw = np.array(hpi.gcc_sink['H'])
+    t_sink_clean, q_demand_clean = _prepare_xy_curve(sink_T_raw, sink_H_raw, is_source=False)
 
-        if len(t_source_clean) == 0 or len(t_sink_clean) == 0:
-            missing = "source" if len(t_source_clean) == 0 else "sink"
-            return HPIOptimizationResult(
-                feasible_points=[],
-                max_q_point=None,
-                original_gcc=original_gcc,
-                profile_mode=profile_mode,
-                diagnostics=HPIOptimizationDiagnostics(messages=[
-                    f"The {missing} profile is empty — there is no "
-                    f"{'waste heat' if missing == 'source' else 'heat demand'} to integrate a heat pump with."
-                ]),
-            )
-
-        step = OPTIMIZATION_CONFIG["step_size"]
-        source_grid = _make_temperature_grid(t_source_clean.min(), t_source_clean.max(), step)
-        source_grid = np.unique(np.concatenate([source_grid, t_source_clean]))
-        
-        sink_grid = _make_temperature_grid(t_sink_clean.min(), t_sink_clean.max(), step)
-        sink_grid = np.unique(np.concatenate([sink_grid, t_sink_clean]))
-
-        T_quelle_mesh, T_senke_mesh = np.meshgrid(source_grid, sink_grid, indexing='ij')
-        T_quelle_flat = T_quelle_mesh.ravel()
-        T_senke_flat = T_senke_mesh.ravel()
-
-        q_avail_flat = np.interp(T_quelle_flat, t_source_clean, q_avail_clean)
-        q_demand_flat = np.interp(T_senke_flat, t_sink_clean, q_demand_clean)
-
-        feasible_points = []
-
-        diag = HPIOptimizationDiagnostics(
-            source_T_min=float(t_source_clean.min()),
-            source_T_max=float(t_source_clean.max()),
-            source_Q_max=float(np.max(q_avail_clean)),
-            sink_T_min=float(t_sink_clean.min()),
-            sink_T_max=float(t_sink_clean.max()),
-            sink_Q_max=float(np.max(q_demand_clean)),
-            model_T_source_min=float(min(a["T_src_min"] for a in alternatives)),
-            model_T_sink_min=float(min(a["T_sink_min"] for a in alternatives)),
-            heat_pumps=len(alternatives),
-            grid_points=int(T_quelle_flat.size),
-            combinations=len(alternatives) * int(T_quelle_flat.size),
+    if len(t_source_clean) == 0 or len(t_sink_clean) == 0:
+        missing = "source" if len(t_source_clean) == 0 else "sink"
+        return HPIOptimizationResult(
+            feasible_points=[],
+            max_q_point=None,
+            original_gcc=original_gcc,
+            profile_mode=profile_mode,
+            diagnostics=HPIOptimizationDiagnostics(messages=[
+                f"The {missing} profile is empty — there is no "
+                f"{'waste heat' if missing == 'source' else 'heat demand'} to integrate a heat pump with."
+            ]),
         )
 
-        for alt in alternatives:
-            # COP over the entire grid, from the model or from a user formula —
-            # both expose the same (t_source, t_sink) -> array signature.
-            T_quelle_model = T_quelle_flat - alt["deltaT_evap"] + gs
-            T_senke_model = T_senke_flat + alt["deltaT_cond"] - gs
+    step = OPTIMIZATION_CONFIG["step_size"]
+    n_src = _grid_size(t_source_clean.min(), t_source_clean.max(), step) + len(t_source_clean)
+    n_snk = _grid_size(t_sink_clean.min(), t_sink_clean.max(), step) + len(t_sink_clean)
+    if n_src * n_snk > MAX_GRID_POINTS:
+        raise SearchTooLarge(
+            f"The temperature span is too wide for the search: source "
+            f"{t_source_clean.min():.0f} to {t_source_clean.max():.0f} °C, sink "
+            f"{t_sink_clean.min():.0f} to {t_sink_clean.max():.0f} °C would be "
+            f"{n_src * n_snk:,} grid points (at most {MAX_GRID_POINTS:,}). "
+            "Check the stream temperatures."
+        )
+    source_grid = _make_temperature_grid(t_source_clean.min(), t_source_clean.max(), step)
+    source_grid = np.unique(np.concatenate([source_grid, t_source_clean]))
+    
+    sink_grid = _make_temperature_grid(t_sink_clean.min(), t_sink_clean.max(), step)
+    sink_grid = np.unique(np.concatenate([sink_grid, t_sink_clean]))
 
-            # Only where this machine can run: the loop below rejects every other
-            # point before it looks at the COP, and the model is most of the
-            # request's time. Every COP source is row-wise, so the values
-            # predicted are the same as over the whole grid.
-            usable = (
-                (T_senke_model >= alt["T_sink_min"]) & (T_senke_model <= alt["T_sink_max"])
-                & (T_quelle_model >= alt["T_src_min"]) & (T_quelle_model <= alt["T_src_max"])
-                & (T_quelle_flat <= T_senke_flat - 10.0)
-            )
-            cop_preds = np.full(T_quelle_flat.shape, -1.0)
-            computed = int(usable.sum())
-            diag.cop_evaluations += computed
-            if not alt.get("theoretical") and alt["refrigerant_type"] != "Custom formula":
-                diag.cop_predictions += computed
-            if usable.any():
-                cop_preds[usable] = np.asarray(
-                    alt["cop_fn"](T_quelle_model[usable], T_senke_model[usable]), dtype=float)
+    T_quelle_mesh, T_senke_mesh = np.meshgrid(source_grid, sink_grid, indexing='ij')
+    T_quelle_flat = T_quelle_mesh.ravel()
+    T_senke_flat = T_senke_mesh.ravel()
 
-            # A formula can return NaN/inf where it is undefined (zero lift, a
-            # log of a negative number). Those must never look feasible.
-            cop_preds = np.where(np.isfinite(cop_preds), cop_preds, -1.0)
+    q_avail_flat = np.interp(T_quelle_flat, t_source_clean, q_avail_clean)
+    q_demand_flat = np.interp(T_senke_flat, t_sink_clean, q_demand_clean)
 
-            # We want to find points where q_src_req == q_avail.
-            # For each unique T_sink, find the T_source that satisfies this.
-            unique_t_sinks = np.unique(T_senke_flat)
-            
-            for t_snk in unique_t_sinks:
-                diag.candidates_total += 1
-                t_senke_model = t_snk + alt["deltaT_cond"] - gs
-                if t_senke_model < alt["T_sink_min"] or t_senke_model > alt["T_sink_max"]:
-                    diag.rejected_sink_range += 1
+    # The grid as a source x sink table: column j holds every source
+    # temperature at sink_grid[j], so a sink's slice is a view, not a scan
+    # of the whole grid.
+    grid_shape = T_quelle_mesh.shape
+    q_avail_cols = q_avail_flat.reshape(grid_shape)
+    q_demand_cols = q_demand_flat.reshape(grid_shape)
+
+    feasible_points = []
+    custom_work = 0.0
+    custom_weights = _network_weights(custom_model)
+
+    diag = HPIOptimizationDiagnostics(
+        source_T_min=float(t_source_clean.min()),
+        source_T_max=float(t_source_clean.max()),
+        source_Q_max=float(np.max(q_avail_clean)),
+        sink_T_min=float(t_sink_clean.min()),
+        sink_T_max=float(t_sink_clean.max()),
+        sink_Q_max=float(np.max(q_demand_clean)),
+        model_T_source_min=float(min(a["T_src_min"] for a in alternatives)),
+        model_T_sink_min=float(min(a["T_sink_min"] for a in alternatives)),
+        heat_pumps=len(alternatives),
+        grid_points=int(T_quelle_flat.size),
+        combinations=len(alternatives) * int(T_quelle_flat.size),
+    )
+
+    for alt in alternatives:
+        # COP over the entire grid, from the model or from a user formula —
+        # both expose the same (t_source, t_sink) -> array signature.
+        T_quelle_model = T_quelle_flat - alt["deltaT_evap"] + gs
+        T_senke_model = T_senke_flat + alt["deltaT_cond"] - gs
+
+        # Only where this machine can run: the loop below rejects every other
+        # point before it looks at the COP, and the model is most of the
+        # request's time. Every COP source is row-wise, so the values
+        # predicted are the same as over the whole grid.
+        usable = (
+            (T_senke_model >= alt["T_sink_min"]) & (T_senke_model <= alt["T_sink_max"])
+            & (T_quelle_model >= alt["T_src_min"]) & (T_quelle_model <= alt["T_src_max"])
+            & (T_quelle_flat <= T_senke_flat - 10.0)
+        )
+        cop_preds = np.full(T_quelle_flat.shape, -1.0)
+        computed = int(usable.sum())
+        diag.cop_evaluations += computed
+        if not alt.get("theoretical") and alt["refrigerant_type"] != "Custom formula":
+            diag.cop_predictions += computed
+        weights = custom_weights if alt["refrigerant_type"] == "Custom model" else 0
+        if weights:
+            custom_work += computed * weights
+            if custom_work > MAX_CUSTOM_MODEL_WORK:
+                raise SearchTooLarge(
+                    "Your trained model is too large for this search: its network size "
+                    "times the temperature grid and its heat pumps exceeds the limit. "
+                    "Narrow its envelope or train it on fewer categories."
+                )
+        if usable.any():
+            cop_preds[usable] = np.asarray(
+                alt["cop_fn"](T_quelle_model[usable], T_senke_model[usable]), dtype=float)
+
+        # A formula can return NaN/inf where it is undefined (zero lift, a
+        # log of a negative number). Those must never look feasible.
+        cop_preds = np.where(np.isfinite(cop_preds), cop_preds, -1.0)
+
+        # We want to find points where q_src_req == q_avail.
+        # For each unique T_sink, find the T_source that satisfies this.
+        # sink_grid is sorted and unique already: the sinks of the grid.
+        cop_cols = cop_preds.reshape(grid_shape)
+
+        for j, t_snk in enumerate(sink_grid):
+            diag.candidates_total += 1
+            t_senke_model = t_snk + alt["deltaT_cond"] - gs
+            if t_senke_model < alt["T_sink_min"] or t_senke_model > alt["T_sink_max"]:
+                diag.rejected_sink_range += 1
+                continue
+
+            # The 1D slice for this T_sink
+            t_src_slice = source_grid
+            q_avail_slice = q_avail_cols[:, j]
+            q_dem = q_demand_cols[0, j]  # constant for this t_snk
+            cop_slice = cop_cols[:, j]
+
+            if q_dem <= 0.0:
+                diag.rejected_no_demand += 1
+                continue
+
+            # We need q_src_req = q_dem * (cop - 1) / cop
+            # We find where q_avail_slice - q_src_req crosses 0
+            t_src_model_slice = t_src_slice - alt["deltaT_evap"] + gs
+            valid_mask = (cop_slice > 1.0) & (cop_slice >= alt["cop_min"]) & (cop_slice <= alt["cop_max"]) & (t_src_slice <= t_snk - 10.0) & (t_src_model_slice >= alt["T_src_min"]) & (t_src_model_slice <= alt["T_src_max"])
+            if not np.any(valid_mask):
+                diag.rejected_source_range += 1
+                continue
+
+            t_src_valid = t_src_slice[valid_mask]
+            q_avail_valid = q_avail_slice[valid_mask]
+            cop_valid = cop_slice[valid_mask]
+            q_src_req_valid = q_dem * (cop_valid - 1.0) / cop_valid
+
+            diff = q_avail_valid - q_src_req_valid
+
+            # Find zero crossings
+            crossings = np.where(np.diff(np.sign(diff)))[0]
+
+            found_full = False
+            for idx in crossings:
+                # Linear interpolation to find the exact T_source
+                t1, t2 = t_src_valid[idx], t_src_valid[idx+1]
+                d1, d2 = diff[idx], diff[idx+1]
+
+                if d1 == d2:
                     continue
 
-                # Extract the 1D slice for this T_sink
-                mask = (T_senke_flat == t_snk)
-                t_src_slice = T_quelle_flat[mask]
-                q_avail_slice = q_avail_flat[mask]
-                q_dem = q_demand_flat[mask][0]  # constant for this t_snk
-                cop_slice = cop_preds[mask]
+                fraction = -d1 / (d2 - d1)
+                t_src_exact = t1 + fraction * (t2 - t1)
+                cop_exact = cop_valid[idx] + fraction * (cop_valid[idx+1] - cop_valid[idx])
+                q_avail_exact = q_avail_valid[idx] + fraction * (q_avail_valid[idx+1] - q_avail_valid[idx])
 
-                if q_dem <= 0.0:
-                    diag.rejected_no_demand += 1
-                    continue
-
-                # We need q_src_req = q_dem * (cop - 1) / cop
-                # We find where q_avail_slice - q_src_req crosses 0
-                t_src_model_slice = t_src_slice - alt["deltaT_evap"] + gs
-                valid_mask = (cop_slice > 1.0) & (cop_slice >= alt["cop_min"]) & (cop_slice <= alt["cop_max"]) & (t_src_slice <= t_snk - 10.0) & (t_src_model_slice >= alt["T_src_min"]) & (t_src_model_slice <= alt["T_src_max"])
-                if not np.any(valid_mask):
-                    diag.rejected_source_range += 1
-                    continue
-
-                t_src_valid = t_src_slice[valid_mask]
-                q_avail_valid = q_avail_slice[valid_mask]
-                cop_valid = cop_slice[valid_mask]
-                q_src_req_valid = q_dem * (cop_valid - 1.0) / cop_valid
-
-                diff = q_avail_valid - q_src_req_valid
-
-                # Find zero crossings
-                crossings = np.where(np.diff(np.sign(diff)))[0]
-
-                found_full = False
-                for idx in crossings:
-                    # Linear interpolation to find the exact T_source
-                    t1, t2 = t_src_valid[idx], t_src_valid[idx+1]
-                    d1, d2 = diff[idx], diff[idx+1]
-
-                    if d1 == d2:
-                        continue
-
-                    fraction = -d1 / (d2 - d1)
-                    t_src_exact = t1 + fraction * (t2 - t1)
-                    cop_exact = cop_valid[idx] + fraction * (cop_valid[idx+1] - cop_valid[idx])
-                    q_avail_exact = q_avail_valid[idx] + fraction * (q_avail_valid[idx+1] - q_avail_valid[idx])
-
-                    # Double check constraints
-                    if cop_exact < alt["cop_min"] or cop_exact > alt["cop_max"] or t_src_exact > t_snk - 10.0:
-                        continue
-
-                    pt = OptimizedIntegrationPoint(
-                        T_source=float(t_src_exact),
-                        T_sink=float(t_snk),
-                        Q_source=float(q_avail_exact),
-                        Q_demand=float(q_dem),
-                        Q_demand_total=float(q_dem),
-                        source_limited=False,
-                        COP=float(cop_exact),
-                        refrigerant=alt["name"],
-                        medium_sink=alt["medium_sink"],
-                        refrigerant_type=alt["refrigerant_type"],
-                        hp_level=alt["hp_level"],
-                        theoretical=alt.get("theoretical", False),
-                        calculation_details=_calculation_details(alt, t_src_exact + gs, t_snk - gs),
-                        **extra_temps(alt, t_src_exact, t_snk),
-                    )
-                    feasible_points.append(pt)
-                    found_full = True
-                    diag.accepted_full += 1
-
-                if found_full:
-                    continue
-
-                # No exact match between available source heat and what the full
-                # sink requirement would draw. That does not make the heat pump
-                # impossible — it only means it cannot cover the whole demand
-                # above T_sink (source-limited) or that source heat is abundant
-                # (demand-limited). Report the best such operating point instead
-                # of dropping the candidate silently.
-                q_sink_possible = q_avail_valid * cop_valid / (cop_valid - 1.0)
-                q_sink_achievable = np.minimum(q_sink_possible, q_dem)
-
-                if not np.any(q_sink_achievable > 0.0):
-                    diag.rejected_no_source_heat += 1
-                    continue
-
-                # Best = most heat delivered; ties (e.g. everything capped at the
-                # full demand) go to the higher COP.
-                best_duty = float(np.max(q_sink_achievable))
-                tie = np.isclose(q_sink_achievable, best_duty, rtol=1e-9, atol=1e-9)
-                idx = int(np.flatnonzero(tie)[np.argmax(cop_valid[tie])])
-
-                q_sink_best = float(q_sink_achievable[idx])
-                cop_best = float(cop_valid[idx])
-                limited = q_sink_best < q_dem - 1e-6
-
-                # A heat pump covering a fraction of a percent of the demand is
-                # not a design option — keep it out of the result set, but count
-                # it so the omission stays visible.
-                if limited and q_sink_best < MIN_COVERAGE * q_dem:
-                    diag.dropped_negligible += 1
+                # Double check constraints
+                if cop_exact < alt["cop_min"] or cop_exact > alt["cop_max"] or t_src_exact > t_snk - 10.0:
                     continue
 
                 pt = OptimizedIntegrationPoint(
-                    T_source=float(t_src_valid[idx]),
+                    T_source=float(t_src_exact),
                     T_sink=float(t_snk),
-                    Q_source=float(q_sink_best * (cop_best - 1.0) / cop_best),
-                    Q_demand=q_sink_best,
+                    Q_source=float(q_avail_exact),
+                    Q_demand=float(q_dem),
                     Q_demand_total=float(q_dem),
-                    source_limited=limited,
-                    # Reaching this branch without being source-limited means the
-                    # duty was capped at the sink demand while source heat was
-                    # still available, so the point sits off the source profile.
-                    demand_limited=not limited,
-                    COP=cop_best,
+                    source_limited=False,
+                    COP=float(cop_exact),
                     refrigerant=alt["name"],
                     medium_sink=alt["medium_sink"],
                     refrigerant_type=alt["refrigerant_type"],
                     hp_level=alt["hp_level"],
                     theoretical=alt.get("theoretical", False),
-                    calculation_details=_calculation_details(
-                        alt, float(t_src_valid[idx]) + gs, t_snk - gs
-                    ),
-                    **extra_temps(alt, float(t_src_valid[idx]), t_snk),
+                    calculation_details=_calculation_details(alt, t_src_exact + gs, t_snk - gs),
+                    **extra_temps(alt, t_src_exact, t_snk),
                 )
                 feasible_points.append(pt)
-                if limited:
-                    diag.accepted_source_limited += 1
-                else:
-                    diag.accepted_demand_limited += 1
+                found_full = True
+                diag.accepted_full += 1
 
-        # The default pump, the one the chart boxes and economics prices when
-        # nothing is clicked: a real machine on both profiles (archetypes are
-        # yardsticks, limited points sit off a curve), most duty, then COP.
-        on_profile = [p for p in feasible_points if not p.source_limited and not p.demand_limited] or feasible_points
-        max_q_point = max([p for p in on_profile if not p.theoretical] or on_profile,
-                          key=lambda p: (p.Q_demand, p.COP), default=None)
+            if found_full:
+                continue
 
-        diag.messages = _diagnostic_messages(diag, len(feasible_points), lang)
-        diag.duration_ms = round((time.perf_counter() - started) * 1000, 1)
+            # No exact match between available source heat and what the full
+            # sink requirement would draw. That does not make the heat pump
+            # impossible — it only means it cannot cover the whole demand
+            # above T_sink (source-limited) or that source heat is abundant
+            # (demand-limited). Report the best such operating point instead
+            # of dropping the candidate silently.
+            q_sink_possible = q_avail_valid * cop_valid / (cop_valid - 1.0)
+            q_sink_achievable = np.minimum(q_sink_possible, q_dem)
 
-        return HPIOptimizationResult(
-            feasible_points=feasible_points,
-            max_q_point=max_q_point,
-            original_gcc=original_gcc,
-            pocketless_source={"H": q_avail_clean.tolist(), "T": t_source_clean.tolist()},
-            pocketless_sink={"H": q_demand_clean.tolist(), "T": t_sink_clean.tolist()},
-            profile_mode=profile_mode,
-            diagnostics=diag,
-        )
-    finally:
-        os.unlink(csv_path)
+            if not np.any(q_sink_achievable > 0.0):
+                diag.rejected_no_source_heat += 1
+                continue
+
+            # Best = most heat delivered; ties (e.g. everything capped at the
+            # full demand) go to the higher COP.
+            best_duty = float(np.max(q_sink_achievable))
+            tie = np.isclose(q_sink_achievable, best_duty, rtol=1e-9, atol=1e-9)
+            idx = int(np.flatnonzero(tie)[np.argmax(cop_valid[tie])])
+
+            q_sink_best = float(q_sink_achievable[idx])
+            cop_best = float(cop_valid[idx])
+            limited = q_sink_best < q_dem - 1e-6
+
+            # A heat pump covering a fraction of a percent of the demand is
+            # not a design option — keep it out of the result set, but count
+            # it so the omission stays visible.
+            if limited and q_sink_best < MIN_COVERAGE * q_dem:
+                diag.dropped_negligible += 1
+                continue
+
+            pt = OptimizedIntegrationPoint(
+                T_source=float(t_src_valid[idx]),
+                T_sink=float(t_snk),
+                Q_source=float(q_sink_best * (cop_best - 1.0) / cop_best),
+                Q_demand=q_sink_best,
+                Q_demand_total=float(q_dem),
+                source_limited=limited,
+                # Reaching this branch without being source-limited means the
+                # duty was capped at the sink demand while source heat was
+                # still available, so the point sits off the source profile.
+                demand_limited=not limited,
+                COP=cop_best,
+                refrigerant=alt["name"],
+                medium_sink=alt["medium_sink"],
+                refrigerant_type=alt["refrigerant_type"],
+                hp_level=alt["hp_level"],
+                theoretical=alt.get("theoretical", False),
+                calculation_details=_calculation_details(
+                    alt, float(t_src_valid[idx]) + gs, t_snk - gs
+                ),
+                **extra_temps(alt, float(t_src_valid[idx]), t_snk),
+            )
+            feasible_points.append(pt)
+            if limited:
+                diag.accepted_source_limited += 1
+            else:
+                diag.accepted_demand_limited += 1
+
+    # The default pump, the one the chart boxes and economics prices when
+    # nothing is clicked: a real machine on both profiles (archetypes are
+    # yardsticks, limited points sit off a curve), most duty, then COP.
+    on_profile = [p for p in feasible_points if not p.source_limited and not p.demand_limited] or feasible_points
+    max_q_point = max([p for p in on_profile if not p.theoretical] or on_profile,
+                      key=lambda p: (p.Q_demand, p.COP), default=None)
+
+    diag.messages = _diagnostic_messages(diag, len(feasible_points), lang)
+    diag.duration_ms = round((time.perf_counter() - started) * 1000, 1)
+
+    return HPIOptimizationResult(
+        feasible_points=feasible_points,
+        max_q_point=max_q_point,
+        original_gcc=original_gcc,
+        pocketless_source={"H": q_avail_clean.tolist(), "T": t_source_clean.tolist()},
+        pocketless_sink={"H": q_demand_clean.tolist(), "T": t_sink_clean.tolist()},
+        profile_mode=profile_mode,
+        diagnostics=diag,
+    )

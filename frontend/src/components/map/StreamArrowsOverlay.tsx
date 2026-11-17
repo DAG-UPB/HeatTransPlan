@@ -2,6 +2,7 @@ import React from 'react';
 import { Marker } from 'react-leaflet';
 import L from 'leaflet';
 import i18n from '../../i18n';
+import { escapeHtml } from '../../utils/safeHtml';
 import { extractStreamInfo, streamSvgText } from '../../utils/streamInfo';
 import { streamColor } from './mapHelpers';
 
@@ -183,7 +184,9 @@ export function StreamArrowsOverlay({
               .join('');
             return `<text text-anchor="middle" ${textStyle}>${spans}</text>`;
           };
-          const feed = [`${streamTypeStr} ${num}`, text.tin, text.mdot, text.cp].filter(Boolean);
+          const feed = [escapeHtml(`${streamTypeStr} ${num}`), text.tin, text.mdot, text.cp].filter(
+            Boolean
+          );
           const product = [text.tout].filter(Boolean);
           const arrow = (y1: number, y2: number, color: string) => {
             const dir = y2 > y1 ? 1 : -1;
@@ -201,7 +204,7 @@ export function StreamArrowsOverlay({
 
           arrowParts.push(
             `<g class="stream-arrow" data-pidx="${s.pIdx}" ${s.ci !== undefined ? `data-cidx="${s.ci}"` : ''} data-si="${s.si}" style="cursor:pointer; transition:all 0.2s">
-               <title>${s.name}: ${s.tin ?? '–'} → ${s.tout ?? '–'} °C</title>
+               <title>${escapeHtml(s.name)}: ${escapeHtml(s.tin ?? '–')} → ${escapeHtml(s.tout ?? '–')} °C</title>
                ${inArrow}
                ${outArrow}
              </g>`

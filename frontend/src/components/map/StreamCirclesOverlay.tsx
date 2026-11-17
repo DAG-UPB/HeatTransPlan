@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Marker } from 'react-leaflet';
 import L from 'leaflet';
 import type { ProcessNode } from '../../types/process';
+import { escapeHtml } from '../../utils/safeHtml';
 import { extractStreamInfo } from '../../utils/streamInfo';
 import { streamColor } from './mapHelpers';
 import type { GroupCoords } from './types';
@@ -192,7 +193,7 @@ export function StreamCirclesOverlay({
                data-si="${s.si}"
                style="cursor:pointer; transition:all 0.2s"
              >
-               <title>${s.name} (${isSelected ? 'Selected' : 'Deselected'})</title>
+               <title>${escapeHtml(s.name)} (${isSelected ? 'Selected' : 'Deselected'})</title>
              </circle>`
           );
           cx += r + (radii[idx + 1] ?? r) + SPACING;

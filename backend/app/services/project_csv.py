@@ -34,6 +34,17 @@ CHILD_SEP = " › "
 
 _MISSING = object()  # a key that is not there (JavaScript's undefined)
 
+# The project comes in as sent, and a process group may list one subprocess
+# any number of times: without a cap a small body asks for a huge file.
+#   distance matrix: n² cells, so 500 subprocesses are 250,000 distances
+#   stream CSV: a large site has a few hundred streams
+MAX_DISTANCE_NODES = 500
+MAX_CSV_ROWS = 100_000
+
+
+class ProjectTooLarge(ValueError):
+    """The project would give a file larger than the limits above."""
+
 
 # ── JavaScript's value rules ────────────────────────────────────────────────
 
@@ -196,6 +207,8 @@ def project_csv(state: Dict[str, Any]) -> str:
             if not streams and not children:
                 rows.append(_empty_row(g_name, sub_name, place))
                 continue
+            if len(rows) + len(streams) + len(children) > MAX_CSV_ROWS:
+                raise ProjectTooLarge(f"The project has more than {MAX_CSV_ROWS:,} streams to export.")
             for s in streams:
                 rows.append(_stream_row(f"{g_name}_{sub_name}_{_js_str(s.get('name'))}",
                                         _stream_cells(s), g_name, sub_name, place))
@@ -213,6 +226,8 @@ def project_csv(state: Dict[str, Any]) -> str:
                 }
                 c_name = f"{sub_name}{CHILD_SEP}{_js_str(child.get('name'))}"
                 c_streams = child.get("streams") or []
+                if len(rows) + len(c_streams) > MAX_CSV_ROWS:
+                    raise ProjectTooLarge(f"The project has more than {MAX_CSV_ROWS:,} streams to export.")
                 if not c_streams:
                     rows.append(_empty_row(g_name, c_name, c_place))
                 for s in c_streams:
@@ -238,8 +253,12 @@ def distance_csv(state: Dict[str, Any], metric: str = "manhattan") -> str:
     meters, as a matrix; N/A where a position is missing. Each is measured at
     its own position, so the real spread inside a process shows."""
     nodes: List[Tuple[str, Optional[float], Optional[float]]] = []
+    too_many = ProjectTooLarge(
+        f"Distances can be exported for up to {MAX_DISTANCE_NODES} subprocesses at a time.")
     for _, g_name, g_coord, members in _groups(state):
         for _, sub in members:
+            if len(nodes) + 1 + len(sub.get("children") or []) > MAX_DISTANCE_NODES:
+                raise too_many
             sub_name = _js_str(sub.get("name"))
             nodes.append((f"{g_name}{CHILD_SEP}{sub_name}",
                           _finite(_number(_or(_get(sub, "lat"), _get(g_coord, "lat")))),

@@ -1,3 +1,29 @@
+{
+    # A client that sends its request slowly (or not at all) must not hold a
+    # connection open forever. The body may take minutes: 50 MB on a slow line.
+    servers {
+        timeouts {
+            read_header 10s
+            read_body 5m
+            idle 5m
+        }
+    }
+}
+
+# How long the backend may take. A computation (an optimisation, training a
+# COP model) answers within seconds; the longest wait is a live command for
+# the page (up to 300 s, app/routers/live.py), so a stuck request ends after
+# 6 minutes. Started answers (the live event stream, the MCP stream) are not
+# cut: they send their data as it comes.
+(backend) {
+    reverse_proxy backend:8000 {
+        transport http {
+            dial_timeout 5s
+            response_header_timeout 6m
+        }
+    }
+}
+
 # The public address comes from SITE_ADDRESS (see .env.example): a domain
 # gets its TLS certificate automatically. Unset: plain http on port 80, any
 # address (http://localhost, http://127.0.0.1).
@@ -24,13 +50,21 @@
             header Content-Type text/html*
         }
     }
-    # Largest upload: a project with its site plan images, or a data file.
-    request_body {
+    # Largest upload: a project with its site plan images (sent with most
+    # project requests), map snapshots for the report, a COP data file. Only
+    # the API and the MCP server take them; the page, the docs and the OAuth
+    # answers are only read, so 1 MB is plenty there.
+    @uploads path /api/* /mcp
+    request_body @uploads {
         max_size 50MB
+    }
+    @no_uploads not path /api/* /mcp
+    request_body @no_uploads {
+        max_size 1MB
     }
 
     handle /api/* {
-        reverse_proxy backend:8000
+        import backend
     }
     # The MCP server needs no login: an AI client asking where to log in
     # (OAuth discovery) must get a plain 404, not the app's page, or it
@@ -41,7 +75,7 @@
     }
     # The MCP server for AI agents (backend/app/mcp_http.py).
     handle /mcp {
-        reverse_proxy backend:8000
+        import backend
     }
     # The documentation, the same version as the app (docs/Dockerfile).
     redir /docs /docs/

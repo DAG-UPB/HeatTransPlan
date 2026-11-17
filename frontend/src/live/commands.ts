@@ -406,6 +406,150 @@ const BUILT_IN: Record<string, Handler> = {
   },
 };
 
+// ── Asking the user ─────────────────────────────────────────────────────────
+// Anyone with the code can send the page commands, not only the user's AI.
+// So the page itself asks its user before a command that deletes or
+// replaces data, whoever sent it, and works out what it would delete from
+// the command itself, not from what the sender says.
+
+/** One line of a question: the text live.confirm_<kind> with {{name}}. */
+export interface AskLine {
+  kind: string;
+  name: string;
+}
+type Confirmer = (lines: AskLine[]) => Promise<boolean>;
+
+let confirmer: Confirmer | null = null;
+let asking: Promise<unknown> = Promise.resolve();
+
+export const DECLINED =
+  'The user declined this on the page. Nothing was changed; ask them what they want instead.';
+
+/** The dialog that asks (AiControls); without one nothing is allowed. */
+export function setConfirmer(fn: Confirmer | null) {
+  confirmer = fn;
+}
+
+/** Ask the user, one question at a time. */
+export function askUser(lines: AskLine[]): Promise<boolean> {
+  const next = asking.then(() => (confirmer ? confirmer(lines) : false));
+  asking = next.catch(() => false);
+  return next;
+}
+
+/** What is in `before` and not in `after`, counting repeats. */
+function missing(before: string[], after: string[]): string[] {
+  const left = new Map<string, number>();
+  for (const n of after) left.set(n, (left.get(n) ?? 0) + 1);
+  return before.filter((n) => {
+    const c = left.get(n) ?? 0;
+    if (c > 0) left.set(n, c - 1);
+    return c === 0;
+  });
+}
+
+const list = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+
+/** The name of a diagram (g<process> / s<subprocess>), for the question. */
+function planName(state: ProjectState, key: string): string {
+  const m = /^([gs])(\d+)$/.exec(key);
+  const names = m?.[1] === 'g' ? state.proc_group_names : state.processes.map((p) => p?.name);
+  return (m && names[Number(m[2])]) || key;
+}
+
+type Named = { name?: string } | null | undefined;
+
+/** What an edit_project step deletes or replaces, from the fields it sends. */
+function editAsks(before: ProjectState, changes: Record<string, unknown>): AskLine[] {
+  // A step with fields it may not change fails anyway, without asking.
+  if (Object.keys(changes).some((k) => !EDITABLE.has(k))) return [];
+  const after = { ...before, ...changes } as ProjectState;
+  const lines: AskLine[] = [];
+  const groups = [list<string>(before.proc_group_names), list<string>(after.proc_group_names)];
+  const subs = [
+    list<Named & { streams?: unknown }>(before.processes),
+    list<Named & { streams?: unknown }>(after.processes),
+  ];
+  const streams = subs.map((ps) => ps.flatMap((p) => list<Named>(p?.streams)));
+  const names = (xs: Named[]) => xs.map((x) => x?.name ?? '');
+  const removed = (kind: string, b: string[], a: string[]) => {
+    const gone = missing(b, a);
+    // Renamed at the same time: no name to show, still a deletion.
+    if (!gone.length) lines.push({ kind: 'edit_removes', name: '' });
+    for (const n of gone.slice(0, 5)) lines.push({ kind, name: n });
+    if (gone.length > 5) lines.push({ kind: 'edit_removes_more', name: String(gone.length - 5) });
+  };
+  // Deleting a process takes its subprocesses and their streams along: name the top.
+  if (groups[1].length < groups[0].length) removed('delete_process', groups[0], groups[1]);
+  else if (subs[1].length < subs[0].length)
+    removed('delete_subprocess', names(subs[0]), names(subs[1]));
+  else if (streams[1].length < streams[0].length)
+    removed('delete_stream', names(streams[0]), names(streams[1]));
+
+  const url = (p: unknown) => (p as { url?: string } | null | undefined)?.url;
+  if (
+    'site_plan' in changes &&
+    url(before.site_plan) &&
+    url(after.site_plan) !== url(before.site_plan)
+  )
+    lines.push({ kind: after.site_plan ? 'replace_site_plan' : 'remove_site_plan', name: '' });
+  if ('canvas_plans' in changes) {
+    const kept = new Set(Object.values(after.canvas_plans ?? {}));
+    for (const [key, plan] of Object.entries(before.canvas_plans ?? {}))
+      if (!kept.has(plan))
+        lines.push({
+          kind: after.canvas_plans?.[key]
+            ? 'replace_subprocess_plan_named'
+            : 'remove_subprocess_plan_named',
+          name: planName(before, key),
+        });
+  }
+  return lines;
+}
+
+/** The questions a command needs before it runs; none for most. */
+export function asksFor(name: string, args: Args): AskLine[] {
+  const state = project().state;
+  switch (name) {
+    case 'set_project': {
+      if (!args.state) return [{ kind: 'set_project_empty', name: '' }];
+      // The sender may name the file or example; it replaces everything all the same.
+      const ask = (args.ask ?? {}) as { kind?: unknown; name?: unknown };
+      const named =
+        (ask.kind === 'replace_project' || ask.kind === 'import_csv') &&
+        typeof ask.name === 'string' &&
+        ask.name !== '';
+      return [
+        named
+          ? { kind: String(ask.kind), name: String(ask.name).slice(0, 80) }
+          : { kind: 'set_project', name: '' },
+      ];
+    }
+    case 'delete_scenario': {
+      const scenario = analysis().scenarios[Number(args.index)];
+      return scenario ? [{ kind: 'delete_scenario_named', name: scenario.name }] : [];
+    }
+    case 'remove_site_plan':
+      return state.site_plan ? [{ kind: 'remove_site_plan', name: '' }] : [];
+    case 'remove_subprocess_plan': {
+      const key = String(args.key);
+      return state.canvas_plans?.[key]
+        ? [{ kind: 'remove_subprocess_plan_named', name: planName(state, key) }]
+        : [];
+    }
+    case 'edit_project':
+      return editAsks(state, (args.changes ?? {}) as Record<string, unknown>);
+  }
+  return [];
+}
+
+/** A command from the AI (or whoever holds the code): asks first where it must. */
+export async function runAiCommand(name: string, args: Args): Promise<unknown> {
+  const lines = asksFor(name, args ?? {});
+  if (lines.length && !(await askUser(lines))) throw new CommandError(DECLINED);
+  return runCommand(name, args);
+}
+
 /** The commands available right now, with those registered by components. */
 export function commandNames(): string[] {
   return [...Object.keys(BUILT_IN), ...registered.keys(), 'list_commands'].sort();

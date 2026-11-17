@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ProcessNode } from '../types/process';
+import { isSafeImageUrl } from '../utils/safeHtml';
 
 // --- Stream Schemas ---
 
@@ -94,6 +95,17 @@ export const groupCoordinatesSchema = z.object({
   hours: z.string().optional(),
 });
 
+// A plan image must be one the browser made (PNG, JPEG or WebP data URL):
+// it is drawn into the map's HTML, so a file may not bring a link or script.
+const planUrlSchema = z.string().refine(isSafeImageUrl, {
+  message: 'A plan must be a PNG, JPEG or WebP image',
+});
+
+export const sitePlanSchema = z.object({
+  url: planUrlSchema,
+  bounds: z.tuple([z.tuple([z.number(), z.number()]), z.tuple([z.number(), z.number()])]),
+});
+
 export const projectStateSchema = z.object({
   timestamp: z.string().nullable().optional(),
   map_locked: z.boolean().optional(),
@@ -110,6 +122,8 @@ export const projectStateSchema = z.object({
   project_notes: z.string().optional(),
   pinch_notes: z.string().optional(),
   map_snapshots_encoded: z.record(z.string(), z.string()).optional(),
+  site_plan: sitePlanSchema.nullable().optional(),
+  canvas_plans: z.record(z.string(), planUrlSchema).optional(),
   selected_streams: z.record(z.string(), z.boolean()).optional(),
   energy_demands: z.array(z.any()).optional(),
   t_min: z.number().optional(),

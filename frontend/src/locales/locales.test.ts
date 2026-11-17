@@ -20,10 +20,14 @@ const SAME_IN_BOTH = new Set([
   'analysis.charts.pinch', // "Pinch" is the loanword used in German too
   'stream.vars.Tout', // symbol
   'optimization.panel.headers.w_el', // symbol
+  'optimization.panel.sub.medium', // same word in both
+  'optimization.panel.sub.q', // symbol and unit
+  'optimization.panel.sub.temp', // abbreviation and unit
   'optimization.desc_opt_panel_c5', // unit only
   'optimization.desc_opt_panel_c6', // formula only
   'optimization.carnot_50', // proper noun
   'cop_modal.name', // same word in both
+  'hp_view.model.medium_short', // same word in both
   'cop_modal.cop_equals', // formula
   'cop_modal.envelope.cop_min', // symbol
   'cop_modal.envelope.cop_max',

@@ -1,5 +1,5 @@
 import { ListTree, Map as MapIcon } from 'lucide-react';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import { useProjectStore } from '../store/projectStore';
 import { useUIStore } from '../store/uiStore';
@@ -14,7 +14,7 @@ import './DataCollectionPage.css';
 import { PartBanner } from '../components/ui/Part';
 import CollectionHelp from '../components/ui/CollectionHelp';
 import { useIsMobile } from '../hooks/useMediaQuery';
-import { orphanProcesses, removeProcesses } from '../utils/processIndex';
+import { orphanProcesses, removeProcesses, withoutIndex } from '../utils/processIndex';
 import { haversineDistance } from '../utils/geoUtils';
 
 export default function DataCollectionPage() {
@@ -109,7 +109,15 @@ export default function DataCollectionPage() {
   const [measureResult, setMeasureResult] = useState<string | null>(null);
 
   // Subprocess map view toggles
-  const [subprocessMapExpanded, setSubprocessMapExpanded] = useState<Record<number, boolean>>({});
+  const [openDiagram, setSubprocessMapExpanded] = useState<Record<number, boolean>>({});
+  // Deleting a process here moves the open diagram with it (onGroupDeleted);
+  // one whose process went another way (an AI command, another case loaded)
+  // is not drawn, so the map is not left empty and frozen.
+  const groupCount = state.proc_groups.length;
+  const subprocessMapExpanded = useMemo(
+    () => Object.fromEntries(Object.entries(openDiagram).filter(([k]) => +k < groupCount)),
+    [openDiagram, groupCount]
+  );
 
   const [showTutorial, setShowTutorial] = useState(false);
   const expandedGroups = useUIStore((s) => s.expandedGroups);
@@ -480,6 +488,9 @@ export default function DataCollectionPage() {
                   setSubprocessMapExpanded((prev) => ({
                     [gIdx]: !prev[gIdx],
                   }))
+                }
+                onGroupDeleted={(gIdx) =>
+                  setSubprocessMapExpanded((prev) => withoutIndex(prev, gIdx))
                 }
               />
             </>

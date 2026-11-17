@@ -2,15 +2,17 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
+# No compiler: every dependency installs as a ready-made wheel (checked with
+# uv 0.12.10 on python:3.13-slim), and the image stays smaller without one.
 RUN apt-get update && apt-get install -y \
-    build-essential \
     fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Built from the repository root (see docker-compose.yml).
 COPY backend/pyproject.toml ./
-# Use the official uv binary
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uv/bin/uv
+# Use the official uv binary, at a fixed version: :latest would change the
+# installer under a rebuild without anyone noticing.
+COPY --from=ghcr.io/astral-sh/uv:0.12.10 /uv /uv/bin/uv
 ENV PATH="/uv/bin:$PATH"
 
 COPY backend/app/ ./app/
@@ -23,7 +25,7 @@ ENV HEATTRANSPLAN_DOCS=/opt/docs
 RUN uv pip install --system . /opt/mcp_server --no-cache-dir
 
 # An ordinary user, never root. Only /tmp is writable (docker-compose.yml
-# mounts it): the projects and matplotlib's font cache live there.
+# mounts it, in memory): uploads in transit and matplotlib's font cache.
 RUN useradd --system --uid 10001 --no-create-home app
 ENV HOME=/tmp MPLCONFIGDIR=/tmp/matplotlib XDG_CACHE_HOME=/tmp/cache
 # The activity log (app/services/activity_log.py): docker-compose.yml mounts a

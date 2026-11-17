@@ -1,6 +1,9 @@
 /** Small pure helpers for the map: tile sources, box icons, stream colours. */
 
 import L from 'leaflet';
+import { escapeHtml } from '../../utils/safeHtml';
+import type { ProcessNode } from '../../types/process';
+import type { GroupCoords } from './types';
 
 export const TILE_URLS: Record<string, string> = {
   OpenStreetMap: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -33,13 +36,13 @@ export function createDivIcon(
   const height = Math.round(fs + py * 2 + 2);
 
   const dataAttrs = markerType
-    ? `data-marker-type="${markerType}" data-marker-id="${markerId}"`
+    ? `data-marker-type="${escapeHtml(markerType)}" data-marker-id="${escapeHtml(markerId)}"`
     : '';
 
   return L.divIcon({
     className: 'custom-marker',
     html: `<div class="draggable-marker" ${dataAttrs} style="background:${bg};color:${textColor};padding:${py}px ${px}px;border-radius:4px;font-size:${fs}px;font-weight:600;white-space:nowrap;width:${width}px;height:${height}px;text-align:center;display:flex;align-items:center;justify-content:center;border:${borderWeight} solid ${borderColor};box-shadow:var(--shadow-sm);opacity:${opacity};transition:background 0.23s,opacity 0.23s;cursor:grab;user-select:none">
-      ${label}
+      ${escapeHtml(label)}
     </div>`,
     iconSize: [width, height],
     iconAnchor: [width / 2, height / 2],
@@ -74,4 +77,44 @@ export function streamColor(
       stroke: `rgba(0,${Math.round(g * 0.4)},${Math.round(b * 0.6)},0.95)`,
     };
   }
+}
+
+/** The boxes a box selection takes: the processes (as all their subprocess
+ *  indices) and subprocesses whose box lies inside, with their marker ids for
+ *  moving them together. Only boxes that are drawn count: while a diagram is
+ *  open that is just its own subprocesses, the other processes are hidden. */
+export function boxesInSelection(
+  inBox: (latlng: [number, number]) => boolean,
+  groups: number[][],
+  groupCoordinates: Record<string, GroupCoords>,
+  processes: ProcessNode[],
+  subprocessMapExpanded: Record<number, boolean>,
+  diagramOpen: boolean
+): { idxs: number[]; ids: string[] } {
+  const idxs: number[] = [];
+  const ids: string[] = [];
+  const openSubs = new Set(groups.filter((_, gIdx) => subprocessMapExpanded[gIdx]).flat());
+
+  if (!diagramOpen) {
+    groups.forEach((subIdxs, gIdx) => {
+      const gc = groupCoordinates[gIdx];
+      if (gc && gc.lat && gc.lon) {
+        if (inBox([parseFloat(String(gc.lat)), parseFloat(String(gc.lon))])) {
+          idxs.push(...subIdxs);
+          ids.push(`group-${gIdx}`);
+        }
+      }
+    });
+  }
+
+  processes.forEach((p, pi) => {
+    if (diagramOpen && !openSubs.has(pi)) return;
+    if (p.lat && p.lon) {
+      if (inBox([parseFloat(String(p.lat)), parseFloat(String(p.lon))])) {
+        idxs.push(pi);
+        ids.push(`sub-${pi}`);
+      }
+    }
+  });
+  return { idxs, ids };
 }

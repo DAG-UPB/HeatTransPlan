@@ -200,17 +200,35 @@ def _chart(fig: go.Figure, title: str, include_plotlyjs: Any = False, wide: bool
     return _card(title, fig.to_html(full_html=False, include_plotlyjs=include_plotlyjs, config=_CONFIG), wide)
 
 
+# What a chart from the request may hold. Plotly writes the spec into the page
+# as JSON with "<" and ">" escaped, so no text in it can close the script; and
+# plotly.js draws text through its own small tag list (no script, only http(s)
+# links). Left out: other top-level keys (frames, config), trace types the
+# economics charts do not use, and layout images, which load from any URL.
+_TRACE_TYPES = {"scatter", "bar", "heatmap"}
+_DROPPED_LAYOUT = {"images"}
+
+
+def _safe_spec(spec: Dict[str, Any]) -> Dict[str, Any]:
+    data = spec.get("data") if isinstance(spec.get("data"), list) else []
+    data = [t for t in data if isinstance(t, dict) and t.get("type", "scatter") in _TRACE_TYPES]
+    layout = spec.get("layout") if isinstance(spec.get("layout"), dict) else {}
+    return {"data": data, "layout": {k: v for k, v in layout.items() if k not in _DROPPED_LAYOUT}}
+
+
 def _spec_chart(spec: Dict[str, Any], wide: bool = False) -> str:
     """The same for a chart the page sent as a plotly.js spec (economics).
     Its title moves to the card; the rest of its layout is the page's."""
-    layout = dict(spec.get("layout") or {})
+    spec = _safe_spec(spec if isinstance(spec, dict) else {})
+    layout = dict(spec["layout"])
     title = layout.pop("title", None)
-    title = title.get("text", "") if isinstance(title, dict) else (title or "")
+    title = str(title.get("text", "") if isinstance(title, dict) else (title or ""))
     title = re.sub(r"<[^>]+>", " ", title)  # Plotly markup such as <br>
     layout.update(font=_STYLE['font'], paper_bgcolor=_STYLE['paper_bgcolor'],
                   plot_bgcolor=_STYLE['plot_bgcolor'], hoverlabel=_STYLE['hoverlabel'])
-    margin = dict(layout.get("margin") or {})
-    margin["t"] = min(margin.get("t", 28), 28)
+    margin = layout.get("margin") if isinstance(layout.get("margin"), dict) else {}
+    margin = dict(margin)
+    margin["t"] = min(margin.get("t", 28), 28) if isinstance(margin.get("t", 28), (int, float)) else 28
     layout["margin"] = margin
     # Specs come from plotly.js, so skip the Python-side validation.
     plot = pio.to_html({**spec, "layout": layout}, full_html=False, include_plotlyjs=False,

@@ -6,7 +6,14 @@ import { useProjectStore } from '../store/projectStore';
 import type { HPIOptimizationResult } from '../types/analysis';
 import type { ProjectState } from '../types/project';
 import fixture from '../test/fixtures/optimization.json';
-import { runCommand, useAiHistory } from './commands';
+import {
+  asksFor,
+  runAiCommand,
+  runCommand,
+  setConfirmer,
+  useAiHistory,
+  type AskLine,
+} from './commands';
 import { econDefaults } from '../test/backendFixtures';
 
 // The CSV comes from the backend; here a stand-in that says what it was sent.
@@ -150,5 +157,96 @@ describe('live commands', () => {
     expect(csv.split('\n').length).toBe(1 + useProjectStore.getState().state.processes.length);
     const dist = (await runCommand('export_distances_csv', { metric: 'euclidean' })) as string;
     expect(dist.split('\n')[0]).toBe('/api/io/export-distances?metric=euclidean');
+  });
+});
+
+describe('the page asks before an AI deletes or replaces', () => {
+  /** The user's answers, and what they were asked. */
+  const asked: AskLine[][] = [];
+  const answer = (allowed: boolean) =>
+    setConfirmer(async (lines) => {
+      asked.push(lines);
+      return allowed;
+    });
+  beforeEach(() => {
+    asked.length = 0;
+    setConfirmer(null);
+  });
+
+  it('wipes nothing without the user, whoever sends it', async () => {
+    const before = useProjectStore.getState().state;
+    // No dialog on the page (not connected): refused.
+    await expect(runAiCommand('set_project', { state: null })).rejects.toThrow(/declined/);
+    answer(false);
+    await expect(runAiCommand('set_project', { state: null })).rejects.toThrow(/declined/);
+    expect(asked[0]).toEqual([{ kind: 'set_project_empty', name: '' }]);
+    expect(useProjectStore.getState().state).toBe(before);
+    answer(true);
+    expect(await runAiCommand('set_project', { state: null })).toEqual({
+      processes: 0,
+      streams: 0,
+    });
+  });
+
+  it('works out itself what a step deletes, by name', async () => {
+    const s = useProjectStore.getState().state;
+    const gone = s.processes[0].streams?.[0]?.name;
+    const processes = s.processes.map((p, i) =>
+      i === 0 ? { ...p, streams: (p.streams ?? []).slice(1) } : p
+    );
+    answer(false);
+    await expect(
+      runAiCommand('edit_project', { changes: { processes }, label: 'harmless rename' })
+    ).rejects.toThrow(/declined/);
+    expect(asked[0]).toEqual([{ kind: 'delete_stream', name: gone }]);
+    expect(useProjectStore.getState().state.processes).toBe(s.processes);
+
+    const groups = asksFor('edit_project', { changes: { proc_group_names: [], proc_groups: [] } });
+    expect(groups).toEqual(s.proc_group_names.map((name) => ({ kind: 'delete_process', name })));
+    // Garbage in place of the processes is a deletion too.
+    expect(asksFor('edit_project', { changes: { processes: 'x' } })[0].kind).toBe(
+      'delete_subprocess'
+    );
+  });
+
+  it('asks about plans and scenarios, and lets plain steps through', async () => {
+    useProjectStore.getState().setState({
+      ...useProjectStore.getState().state,
+      site_plan: {
+        url: 'data:a',
+        bounds: [
+          [0, 0],
+          [1, 1],
+        ],
+      } as never,
+      canvas_plans: { g0: 'data:b' },
+    });
+    const name = useProjectStore.getState().state.proc_group_names[0];
+    expect(asksFor('remove_site_plan', {})).toEqual([{ kind: 'remove_site_plan', name: '' }]);
+    expect(
+      asksFor('edit_project', { changes: { site_plan: { url: 'data:c', bounds: [] } } })
+    ).toEqual([{ kind: 'replace_site_plan', name: '' }]);
+    expect(asksFor('remove_subprocess_plan', { key: 'g0' })).toEqual([
+      { kind: 'remove_subprocess_plan_named', name },
+    ]);
+    expect(asksFor('edit_project', { changes: { canvas_plans: {} } })).toEqual([
+      { kind: 'remove_subprocess_plan_named', name },
+    ]);
+    scenario();
+    expect(asksFor('delete_scenario', { index: 0 })).toEqual([
+      { kind: 'delete_scenario_named', name: 'Kept' },
+    ]);
+    // The sender may name the file; the question is still about replacing all.
+    expect(
+      asksFor('set_project', { state: {}, ask: { kind: 'import_csv', name: 'x.csv' } })
+    ).toEqual([{ kind: 'import_csv', name: 'x.csv' }]);
+    expect(
+      asksFor('set_project', { state: {}, ask: { kind: 'delete_stream', name: 'x' } })
+    ).toEqual([{ kind: 'set_project', name: '' }]);
+    // Adding and changing need no question.
+    const names = [...useProjectStore.getState().state.proc_group_names, 'Dryer'];
+    expect(asksFor('edit_project', { changes: { proc_group_names: names } })).toEqual([]);
+    await runAiCommand('edit_project', { changes: { proc_group_names: names } });
+    expect(asked).toEqual([]);
   });
 });
