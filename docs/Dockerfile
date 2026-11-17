@@ -2,7 +2,7 @@
 # Caddyfile). Built from the repository root: the pages include source code
 # from backend/, frontend/, mcp_server/ and the Caddyfile ("Source code").
 
-FROM python:3.13-slim AS build
+FROM python:3.15-slim AS build
 WORKDIR /repo
 COPY docs/requirements.txt docs/requirements.txt
 RUN pip install --no-cache-dir -r docs/requirements.txt
