@@ -1,5 +1,5 @@
 declare module 'react-plotly.js' {
-  interface PlotProps {
+  export interface PlotProps {
     data: any[];
     layout?: any;
     config?: any;
@@ -26,13 +26,16 @@ declare module 'react-plotly.js' {
   export default Plot;
 }
 
-// The partial bundle in components/analysis/Plot.ts.
+// The partial bundle in components/analysis/Plot.tsx.
 declare module 'react-plotly.js/factory' {
   import type Plot from 'react-plotly.js';
   export default function createPlotlyComponent(plotly: object): typeof Plot;
 }
 declare module 'plotly.js/lib/core' {
-  const Plotly: { register(modules: object[]): void };
+  const Plotly: {
+    register(modules: object[]): void;
+    Plots: { resize(graphDiv: HTMLElement): Promise<void> };
+  };
   export default Plotly;
 }
 declare module 'plotly.js/lib/bar' {

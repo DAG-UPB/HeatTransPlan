@@ -73,4 +73,5 @@ economic_analysis
 
 architecture_and_security
 api_and_mcp
+ai_briefing
 ```

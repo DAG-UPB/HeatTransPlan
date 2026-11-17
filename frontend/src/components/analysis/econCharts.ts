@@ -345,8 +345,10 @@ export function sensitivityChart(c: ChartCtx): { sens: Fig; sensExplain: string 
     layout: layout(sensTitle, {
       // Taller when there are more rows, so written values stay readable.
       height,
-      // ~95 px per column instead of stretching the cells across the card.
-      // ponytail: fixed width, may overflow on very narrow screens.
+      // ~95 px per column instead of stretching the cells across the card:
+      // the most it takes. In a narrower card it shrinks to fit
+      // (EconomicAnalysis drops the width from the layout and uses it as
+      // max-width).
       width: 230 + 95 * gasCt.length,
       // The top axis and its title need room below the chart title.
       margin: { l: 90, r: 20, t: 110, b: 30 },
