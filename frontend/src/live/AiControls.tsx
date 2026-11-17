@@ -1,21 +1,28 @@
 /** What the user controls while an AI is connected: pause it, see what it
- *  changed, and allow or refuse what it wants to delete or replace (the
- *  MCP server asks with the command confirm_ai_action and waits). */
+ *  changed, and allow or refuse what it wants to delete or replace. The page
+ *  asks before any such command itself (runAiCommand in commands.ts); older
+ *  MCP servers also ask first with the command confirm_ai_action. */
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { History, Pause, Play, Undo2 } from 'lucide-react';
-import { undoStep, useAiHistory, useLiveCommand } from './commands';
+import {
+  askUser,
+  setConfirmer,
+  undoStep,
+  useAiHistory,
+  useLiveCommand,
+  type AskLine,
+} from './commands';
 import { setAiPaused, useLiveStore } from './liveClient';
 import '../components/analysis/CopFormulaModal.css';
 
-// The MCP server waits 120 s for an answer; refuse a little before that.
+// The MCP server waits 150 s for an answer (120 s for older ones); refuse a little before that.
 const ASK_SECONDS = 110;
 
 interface Ask {
-  kind: string;
-  name: string;
+  lines: AskLine[];
   answer: (allowed: boolean) => void;
 }
 
@@ -27,26 +34,32 @@ export default function AiControls() {
   const [showLog, setShowLog] = useState(false);
   const [ask, setAsk] = useState<Ask | null>(null);
 
-  useLiveCommand(
-    'confirm_ai_action',
-    (args) =>
-      new Promise((resolve) => {
-        let settled = false;
-        const timer = setTimeout(() => done(false), ASK_SECONDS * 1000);
-        const done = (allowed: boolean) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          setAsk(null);
-          resolve({ allowed });
-        };
-        const name = String(args.name ?? '');
-        // Replacing with a project given as data has no file name to show.
-        const kind =
-          args.kind === 'replace_project' && !name ? 'set_project' : String(args.kind ?? '');
-        setAsk({ kind, name, answer: done });
-      })
-  );
+  // The page's one dialog for every question, one at a time (askUser).
+  useEffect(() => {
+    setConfirmer(
+      (lines) =>
+        new Promise<boolean>((resolve) => {
+          let settled = false;
+          const timer = setTimeout(() => done(false), ASK_SECONDS * 1000);
+          const done = (allowed: boolean) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            setAsk(null);
+            resolve(allowed);
+          };
+          setAsk({ lines, answer: done });
+        })
+    );
+    return () => setConfirmer(null);
+  }, []);
+
+  useLiveCommand('confirm_ai_action', async (args) => {
+    const name = String(args.name ?? '').slice(0, 80);
+    // Replacing with a project given as data has no file name to show.
+    const kind = args.kind === 'replace_project' && !name ? 'set_project' : String(args.kind ?? '');
+    return { allowed: await askUser([{ kind, name }]) };
+  });
 
   // An open question goes when the page disconnects.
   useEffect(() => () => ask?.answer(false), [ask]);
@@ -123,12 +136,15 @@ export default function AiControls() {
                 <h3>{t('live.confirm_title')}</h3>
               </header>
               <div className="cf-body">
-                <p>
-                  {t(`live.confirm_${ask.kind}`, {
-                    name: ask.name,
-                    defaultValue: t('live.confirm_other', { name: `${ask.kind} ${ask.name}` }),
-                  })}
-                </p>
+                {ask.lines.map((line, i) => (
+                  <p key={i}>
+                    {t(`live.confirm_${line.kind}`, {
+                      name: line.name,
+                      defaultValue: t('live.confirm_other', { name: `${line.kind} ${line.name}` }),
+                    })}
+                  </p>
+                ))}
+                <p className="cf-muted">{t('live.confirm_note')}</p>
                 <div className="live-confirm-actions">
                   <button
                     type="button"

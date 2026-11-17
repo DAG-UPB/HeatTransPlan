@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import io
 import re
+import zipfile
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
@@ -15,6 +16,13 @@ MAX_FILE_BYTES = 20 * 1024 * 1024
 # training run to seconds. Larger files are sampled down, not rejected.
 MAX_ROWS = 10_000
 MIN_ROWS = 30
+# What a file may unpack to. Excel and Parquet are compressed, so 20 MB on the
+# wire can be gigabytes once read; these are checked before anything is parsed.
+# Rows above MAX_ROWS are sampled down, but only up to this many are read.
+MAX_READ_ROWS = 200_000
+MAX_COLUMNS = 200
+MAX_SHEETS = 50
+MAX_UNPACKED_BYTES = 100 * 1024 * 1024
 
 
 class DataError(ValueError):
@@ -34,37 +42,90 @@ def _numeric(col: pd.Series) -> pd.Series:
 EXCEL = (".xlsx", ".xlsm")
 
 
+def _check_size(content: bytes) -> None:
+    if len(content) > MAX_FILE_BYTES:
+        raise DataError(f"The file is larger than {MAX_FILE_BYTES // (1024 * 1024)} MB.")
+
+
+def _check_excel(content: bytes) -> None:
+    """An .xlsx is a zip of XML: its unpacked size is known before parsing."""
+    _check_size(content)
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as z:
+            unpacked = sum(i.file_size for i in z.infolist())
+    except zipfile.BadZipFile as exc:
+        raise DataError("The file is not a valid Excel (.xlsx) file.") from exc
+    if unpacked > MAX_UNPACKED_BYTES:
+        raise DataError(f"The Excel file unpacks to more than {MAX_UNPACKED_BYTES // (1024 * 1024)} MB.")
+
+
+def _check_parquet(content: bytes) -> None:
+    """Rows, columns and unpacked size from the Parquet footer, before reading."""
+    import pyarrow.parquet as pq
+    try:
+        meta = pq.ParquetFile(io.BytesIO(content)).metadata
+    except Exception as exc:  # noqa: BLE001 - any parser failure is the file's
+        raise DataError(f"The file could not be read: {exc}") from exc
+    _check_shape(meta.num_rows, meta.num_columns)
+    unpacked = sum(meta.row_group(i).total_byte_size for i in range(meta.num_row_groups))
+    if unpacked > MAX_UNPACKED_BYTES:
+        raise DataError(f"The Parquet file unpacks to more than {MAX_UNPACKED_BYTES // (1024 * 1024)} MB.")
+
+
+def _check_shape(rows: int, columns: int) -> None:
+    if rows > MAX_READ_ROWS:
+        raise DataError(f"The table has more than {MAX_READ_ROWS:,} rows.")
+    if columns > MAX_COLUMNS:
+        raise DataError(f"The table has more than {MAX_COLUMNS} columns.")
+
+
 def sheets(filename: str, content: bytes) -> List[str]:
     """The sheets of an Excel file; empty for other files."""
     if not filename.lower().endswith(EXCEL):
         return []
+    _check_excel(content)
     try:
-        return pd.ExcelFile(io.BytesIO(content)).sheet_names
+        names = pd.ExcelFile(io.BytesIO(content)).sheet_names
     except Exception as exc:  # noqa: BLE001 - any parser failure is the file's
         raise DataError(f"The file could not be read: {exc}") from exc
+    if len(names) > MAX_SHEETS:
+        raise DataError(f"The Excel file has more than {MAX_SHEETS} sheets.")
+    return names
 
 
 def default_sheet(filename: str, content: bytes) -> Optional[str]:
     """The first sheet with a COP column (parameter studies often keep their
     inputs on the first sheet and the results on another), else the first."""
     names = sheets(filename, content)
-    for name in names:
-        head = pd.read_excel(io.BytesIO(content), sheet_name=name, nrows=0)
-        if any(re.search(r"\bcop\b", str(c).lower()) for c in head.columns):
-            return name
+    try:
+        book = pd.ExcelFile(io.BytesIO(content)) if names else None
+        for name in names:
+            head = pd.read_excel(book, sheet_name=name, nrows=0)
+            if any(re.search(r"\bcop\b", str(c).lower()) for c in head.columns):
+                return name
+    except Exception as exc:  # noqa: BLE001 - any parser failure is the file's
+        raise DataError(f"The file could not be read: {exc}") from exc
     return names[0] if names else None
 
 
 def read_table(filename: str, content: bytes, sheet: Optional[str] = None) -> pd.DataFrame:
-    if len(content) > MAX_FILE_BYTES:
-        raise DataError(f"The file is larger than {MAX_FILE_BYTES // (1024 * 1024)} MB.")
+    _check_size(content)
     name = filename.lower()
+    # One row more than allowed, so a longer table is told apart from one of
+    # exactly MAX_READ_ROWS without reading the rest.
+    nrows = MAX_READ_ROWS + 1
     try:
         if name.endswith(EXCEL):
-            df = pd.read_excel(io.BytesIO(content), sheet_name=sheet or default_sheet(filename, content))
+            _check_excel(content)
+            df = pd.read_excel(io.BytesIO(content), sheet_name=sheet or default_sheet(filename, content),
+                               nrows=nrows)
         elif name.endswith((".csv", ".txt", ".tsv")):
-            df = pd.read_csv(io.BytesIO(content), sep=None, engine="python", encoding_errors="replace")
+            kw = dict(sep=None, engine="python", encoding_errors="replace")
+            # The header first: a single line of a million cells is no table.
+            _check_shape(0, len(pd.read_csv(io.BytesIO(content), nrows=0, **kw).columns))
+            df = pd.read_csv(io.BytesIO(content), nrows=nrows, **kw)
         elif name.endswith(".parquet"):
+            _check_parquet(content)
             df = pd.read_parquet(io.BytesIO(content))
         else:
             raise DataError("Upload a CSV, Excel (.xlsx) or Parquet file.")
@@ -72,6 +133,7 @@ def read_table(filename: str, content: bytes, sheet: Optional[str] = None) -> pd
         raise
     except Exception as exc:  # noqa: BLE001 - any parser failure is the file's
         raise DataError(f"The file could not be read: {exc}") from exc
+    _check_shape(len(df), len(df.columns))
     df.columns = [str(c).strip() for c in df.columns]
     if df.empty or len(df.columns) < 3:
         raise DataError("The table needs at least three columns: two temperatures and the COP.")

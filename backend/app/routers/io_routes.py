@@ -15,21 +15,28 @@ from datetime import datetime
 import json
 
 from app.models.project import ProjectState
-from app.services.project_csv import distance_csv, is_project_csv, project_csv, read_project_csv
+from app.services.project_csv import (
+    ProjectTooLarge, distance_csv, is_project_csv, project_csv, read_project_csv,
+)
 
 router = APIRouter()
+
+# The handlers that parse or build a file are plain `def`: FastAPI runs them
+# in its thread pool, so a large project does not hold up every other request
+# the way `async def` would. They read the upload with file.file.read(), the
+# blocking form, for the same reason.
 
 
 # ---- JSON Import/Export ----
 
 @router.post("/import-json")
-async def import_json(file: UploadFile = File(...)):
+def import_json(file: UploadFile = File(...)):
     """
     Read a project file (same format as save_app_state()) and return it as a
     checked project state. Nothing is kept.
     """
     try:
-        content = await file.read()
+        content = file.file.read()
         data = json.loads(content.decode("utf-8"))
         return {"state": ProjectState(**data)}
     except Exception as e:
@@ -44,7 +51,7 @@ async def import_json_body(state: ProjectState):
 
 
 @router.post("/export-json")
-async def export_json(project: ProjectState):
+def export_json(project: ProjectState):
     """The project sent, as a JSON download."""
     data = project.model_dump()
     content = json.dumps(data, indent=2).encode("utf-8")
@@ -69,27 +76,33 @@ def _csv_download(text: str, stem: str) -> StreamingResponse:
 
 
 @router.post("/export-csv")
-async def export_csv(project: Dict[str, Any] = Body(...)):
+def export_csv(project: Dict[str, Any] = Body(...)):
     """The streams of the project sent, as CSV: one row per stream, semicolon
     separated (app/services/project_csv.py). The page's Export CSV, its
     export_csv command and the MCP tool all get this one format, and
     /import-csv reads it back. The project is taken as the page holds it."""
-    return _csv_download(project_csv(project), "heattransplan_export")
+    try:
+        return _csv_download(project_csv(project), "heattransplan_export")
+    except ProjectTooLarge as exc:
+        raise HTTPException(413, str(exc)) from exc
 
 
 @router.post("/export-distances")
-async def export_distances(project: Dict[str, Any] = Body(...),
-                           metric: Literal["manhattan", "euclidean"] = "manhattan"):
+def export_distances(project: Dict[str, Any] = Body(...),
+                     metric: Literal["manhattan", "euclidean"] = "manhattan"):
     """Distances between the subprocesses of the project sent, in meters, as
     a CSV matrix: along north-south plus east-west (manhattan) or straight
     (euclidean)."""
-    return _csv_download(distance_csv(project, metric), f"heattransplan_distances_{metric}")
+    try:
+        return _csv_download(distance_csv(project, metric), f"heattransplan_distances_{metric}")
+    except ProjectTooLarge as exc:
+        raise HTTPException(413, str(exc)) from exc
 
 
 # ---- CSV Import ----
 
 @router.post("/import-csv")
-async def import_csv(file: UploadFile = File(...)):
+def import_csv(file: UploadFile = File(...)):
     """Read process data from CSV and return the processes; the caller puts
     them into its project. Nothing is kept. Reads this app's own export
     (/export-csv: then also the process groups, their names and positions)
@@ -99,7 +112,7 @@ async def import_csv(file: UploadFile = File(...)):
         import pandas as pd
         import io as _io
 
-        content = await file.read()
+        content = file.file.read()
         text = content.decode("utf-8-sig")
         if is_project_csv(text):
             # This app's own export: processes, their groups and positions.

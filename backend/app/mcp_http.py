@@ -4,12 +4,19 @@ or any other) connects with the app's address alone, nothing installed.
 The tools call this backend in-process. Online they never touch the server's
 disk for a caller: files come in as content and results go out as download
 links (/api/mcp/files/...). With API keys on, app/api_keys.py checks the
-key in front of /mcp (header or ?key=) before this app sees the request."""
+key in front of /mcp (header or ?key=) before this app sees the request.
+
+What the tools keep for an open page (its last analysis, trained models,
+download links) goes when its live session ends: the server keeps nothing
+of a project once the page is closed."""
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import logging
+from contextvars import ContextVar
+from urllib.parse import quote
 
 import httpx
 from fastapi import APIRouter, HTTPException
@@ -18,9 +25,23 @@ from heattransplan_mcp import files, server
 from heattransplan_mcp.api import Api
 from mcp.server.transport_security import TransportSecuritySettings
 
-from app.rate_limit import INTERNAL_TOKEN
+from app.rate_limit import CALLER_HEADER, INTERNAL_TOKEN
+from app.services import live
 
 router = APIRouter()
+
+# The address of the agent whose /mcp request is running: the tools' calls
+# into the backend name it, so codes it guesses count against it (app/rate_limit.py).
+CALLER_IP: ContextVar[str] = ContextVar("CALLER_IP", default="")
+# How often expired download links are swept even when nobody asks for one.
+SWEEP_SECONDS = 60
+
+
+def _disposition(filename: str) -> str:
+    """attachment with the name in ASCII and, for the rest, RFC 5987: a header
+    is latin-1, a name may be anything."""
+    plain = filename.encode("ascii", "replace").decode().replace("?", "_").replace('"', "_")
+    return f"attachment; filename=\"{plain}\"; filename*=UTF-8''{quote(filename, safe='')}"
 
 
 @router.get("/files/{token}/{name}")
@@ -28,9 +49,8 @@ async def download(token: str, name: str):
     found = files.download(token, name)
     if not found:
         raise HTTPException(404, "This download link has expired or was used; ask the assistant for a new one.")
-    filename, data, media_type, _ = found
-    return Response(data, media_type=media_type,
-                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+    filename, data, media_type = found[:3]
+    return Response(data, media_type=media_type, headers={"Content-Disposition": _disposition(filename)})
 
 
 def _base_url(headers: dict) -> str:
@@ -41,7 +61,7 @@ def _base_url(headers: dict) -> str:
 
 
 class McpEndpoint:
-    """ASGI app at /mcp: notes the public address, hands over."""
+    """ASGI app at /mcp: notes the public address and the caller, hands over."""
 
     handler = None
 
@@ -51,13 +71,31 @@ class McpEndpoint:
             await Response("MCP is starting", 503)(scope, receive, send)
             return
         token = files.BASE_URL.set(_base_url(headers))
+        caller = CALLER_IP.set((scope.get("client") or ("unknown",))[0])
         try:
             await self.handler(scope, receive, send)
         finally:
+            CALLER_IP.reset(caller)
             files.BASE_URL.reset(token)
 
 
 endpoint = McpEndpoint()
+
+
+async def _name_caller(request: httpx.Request) -> None:
+    if ip := CALLER_IP.get():
+        request.headers[CALLER_HEADER.decode()] = ip
+
+
+def _forget(session: live.Session) -> None:
+    server.forget(session.project_id)
+
+
+async def _sweep() -> None:
+    while True:
+        await asyncio.sleep(SWEEP_SECONDS)
+        files.sweep()
+        live.prune()
 
 
 @contextlib.asynccontextmanager
@@ -68,11 +106,13 @@ async def lifespan(app):
     headers = {"X-HeatTransPlan-Internal": INTERNAL_TOKEN, "X-Actor": "ai"}
     client = httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://backend", timeout=330,
-        headers=headers)
+        headers=headers, event_hooks={"request": [_name_caller]})
     # The session manager logs every stateless request at INFO.
     logging.getLogger("mcp.server.streamable_http").setLevel(logging.WARNING)
     files.HOSTED = True
     server.set_api(Api(base_url="http://backend", api_key="", client=client))
+    stop_forgetting = live.on_end(_forget)
+    sweeper = asyncio.get_running_loop().create_task(_sweep())
     # Stateless JSON: every call stands alone, nothing to keep per client.
     # The Host check guards local servers against DNS rebinding; this one is public by design.
     endpoint.handler = server.mcp.streamable_http_app(
@@ -83,5 +123,7 @@ async def lifespan(app):
             yield
     finally:
         endpoint.handler = None
+        sweeper.cancel()
+        stop_forgetting()
         files.HOSTED = False
         await client.aclose()

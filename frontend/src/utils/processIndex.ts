@@ -56,3 +56,37 @@ export function removeStreamFromSelection(
     })
   );
 }
+
+/** Deleting a process moves the later processes up by one: what is kept by
+ *  process index (such as the open diagram) moves with them, and the deleted
+ *  one's entry goes. */
+export function withoutIndex<T>(byIndex: Record<number, T>, index: number): Record<number, T> {
+  return Object.fromEntries(
+    Object.entries(byIndex).flatMap(([key, val]) => {
+      const i = Number(key);
+      if (i === index) return [];
+      return [[i > index ? i - 1 : i, val]];
+    })
+  );
+}
+
+/** Diagram backgrounds are kept by index: `g<process>` and `s<subprocess>`.
+ *  Deleting a process or subprocess drops its own background and moves the
+ *  later ones down with their owners, so no other one inherits it. */
+export function reindexPlans(
+  plans: Record<string, string>,
+  removedGroup: number | null,
+  removedSubs: number[]
+): Record<string, string> {
+  const shift = (i: number, removed: number[]) => i - removed.filter((r) => r < i).length;
+  const groupsGone = removedGroup === null ? [] : [removedGroup];
+  return Object.fromEntries(
+    Object.entries(plans).flatMap(([key, url]) => {
+      const m = /^([gs])(\d+)$/.exec(key);
+      if (!m) return [[key, url]];
+      const i = Number(m[2]);
+      const gone = m[1] === 'g' ? groupsGone : removedSubs;
+      return gone.includes(i) ? [] : [[`${m[1]}${shift(i, gone)}`, url]];
+    })
+  );
+}

@@ -7,6 +7,7 @@ import { Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { useTranslation } from 'react-i18next';
 import { CANVAS_SHARE } from './connectionRoute';
+import { escapeHtml, safeImageUrl } from '../../utils/safeHtml';
 
 export function MapController({
   center,
@@ -206,6 +207,8 @@ export function SubprocessCanvasOverlay({ active, image }: { active: boolean; im
   }, [active, map]);
 
   if (!active) return null;
+  // Only an image the browser made: anything else could break out of url('').
+  const plan = safeImageUrl(image);
   const center = map.getCenter();
   const size = map.getSize();
   const width = size.x * CANVAS_SHARE;
@@ -216,7 +219,7 @@ export function SubprocessCanvasOverlay({ active, image }: { active: boolean; im
   const bgIcon = L.divIcon({
     className: 'subprocess-canvas-bg',
     // The process's own plan, if one was loaded, fills the canvas behind the diagram.
-    html: `<div style="width: ${width}px; height: ${height}px; margin-left: -${width / 2}px; margin-top: -${height / 2}px; background: var(--surface, #ffffff)${image ? ` url('${image}') center / contain no-repeat` : ''}; opacity: ${image ? 1 : 0.91}; pointer-events: none; border-radius: 12px; border: 1px solid var(--border, #e0e0e0); box-shadow: 0 8px 32px rgba(0,0,0,0.08);"></div>`,
+    html: `<div style="width: ${width}px; height: ${height}px; margin-left: -${width / 2}px; margin-top: -${height / 2}px; background: var(--surface, #ffffff)${plan ? ` url('${escapeHtml(plan)}') center / contain no-repeat` : ''}; opacity: ${plan ? 1 : 0.91}; pointer-events: none; border-radius: 12px; border: 1px solid var(--border, #e0e0e0); box-shadow: 0 8px 32px rgba(0,0,0,0.08);"></div>`,
     iconSize: [0, 0],
   });
 

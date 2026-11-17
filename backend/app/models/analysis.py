@@ -3,10 +3,12 @@ Analysis request/response models for pinch analysis, HPI, and status quo compari
 """
 
 from __future__ import annotations
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, Field, computed_field
 
-from app.models.cop_training import CustomCopModelSpec
+from app.models.cop_training import (
+    ENVELOPE_COP_MAX, ENVELOPE_T_MAX, ENVELOPE_T_MIN, CustomCopModelSpec,
+)
 from app.services import pinch_figures
 
 
@@ -15,6 +17,21 @@ from app.services import pinch_figures
 #   composite   hot/cold composite curves, no recovery at all
 ProfileMode = Literal["net_load", "composite"]
 
+# Limits on what a request may ask the server to compute. Far above any real
+# site, so they only stop requests built to tie the server up.
+#   streams: a large site has a few dozen; the pinch cost grows with the square
+#   temperatures: absolute zero up to furnace flue gas, °C
+#   curve points: an H-T curve has about two points per stream
+MAX_PINCH_STREAMS = 500
+T_LOWEST = -273.15
+T_HIGHEST = 2000.0
+MAX_CURVE_POINTS = 20_000
+
+Temperature = Annotated[float, Field(ge=T_LOWEST, le=T_HIGHEST)]
+CurvePoints = Annotated[List[float], Field(max_length=MAX_CURVE_POINTS)]
+Curve = Annotated[Dict[str, CurvePoints], Field(max_length=8)]
+CurveRows = Annotated[List[Dict[str, float]], Field(max_length=MAX_CURVE_POINTS)]
+
 
 # ---------------------------------------------------------------------------
 # Pinch Analysis
@@ -22,22 +39,22 @@ ProfileMode = Literal["net_load", "composite"]
 
 class PinchStream(BaseModel):
     """A single stream for pinch analysis input."""
-    name: str = ""
-    CP: float                  # Heat capacity rate (kW/°C)
-    T_supply: float            # Supply temperature (°C)
-    T_target: float            # Target temperature (°C)
+    name: str = Field("", max_length=1000)
+    CP: float = Field(allow_inf_nan=False)  # Heat capacity rate (kW/°C)
+    T_supply: Temperature      # Supply temperature (°C)
+    T_target: Temperature      # Target temperature (°C)
 
 
 class PinchRequest(BaseModel):
     """Input to the pinch analysis endpoint."""
-    streams: List[PinchStream]
-    T_min: float               # Minimum temperature difference (°C)
+    streams: List[PinchStream] = Field(max_length=MAX_PINCH_STREAMS)
+    T_min: float = Field(ge=0, le=200)  # Minimum temperature difference (°C)
 
 
 class CompositeDiagramData(BaseModel):
     """H-T data for hot and cold composite curves."""
-    hot: Dict[str, List[float]] = Field(default_factory=lambda: {"H": [], "T": []})
-    cold: Dict[str, List[float]] = Field(default_factory=lambda: {"H": [], "T": []})
+    hot: Curve = Field(default_factory=lambda: {"H": [], "T": []})
+    cold: Curve = Field(default_factory=lambda: {"H": [], "T": []})
 
 
 class PinchResult(BaseModel):
@@ -45,19 +62,21 @@ class PinchResult(BaseModel):
     pinch_temperature: float
     hot_utility: float          # Minimum hot utility (kW)
     cold_utility: float         # Minimum cold utility (kW)
-    T_min: float
-    temperatures: List[float]   # Sorted shifted temperature intervals
+    T_min: float = Field(allow_inf_nan=False)
+    temperatures: CurvePoints   # Sorted shifted temperature intervals
     # Problem table
-    problem_table: List[Dict[str, float]]
+    problem_table: CurveRows
     # Heat cascade
-    heat_cascade: List[Dict[str, float]]
-    unfeasible_heat_cascade: List[Dict[str, float]]
+    heat_cascade: CurveRows
+    unfeasible_heat_cascade: CurveRows
     # Diagrams (lists of H, T values for plotting)
     shifted_composite_diagram: CompositeDiagramData = Field(default_factory=CompositeDiagramData)
     composite_diagram: CompositeDiagramData = Field(default_factory=CompositeDiagramData)
-    grand_composite_curve: Dict[str, List[float]] = Field(default_factory=lambda: {"H": [], "T": []})
-    # Stream info for labelling charts
-    streams_data: List[Dict[str, Any]] = Field(default_factory=list)
+    grand_composite_curve: Curve = Field(default_factory=lambda: {"H": [], "T": []})
+    # Stream info for labelling charts. The heat pump endpoints rerun the
+    # pinch from these, so there may be no more than in a PinchRequest; the
+    # search checks the temperature span it gets (optimization/search.py).
+    streams_data: List[Dict[str, Any]] = Field(default_factory=list, max_length=MAX_PINCH_STREAMS)
 
     # Derived from the fields above (app/services/pinch_figures.py), sent with
     # every answer so the page only shows them. Recomputed, never read from a
@@ -269,23 +288,24 @@ class CopFormulaSpec(BaseModel):
 
     # Validity envelope. Outside it the pump is simply not offered, the same way
     # a model-backed alternative is rejected outside its trained range.
-    T_source_min: float = 0.0
-    T_source_max: float = 200.0
-    T_sink_min: float = 0.0
-    T_sink_max: float = 250.0
-    cop_min: float = 1.0
-    cop_max: float = 20.0
+    T_source_min: float = Field(0.0, ge=ENVELOPE_T_MIN, le=ENVELOPE_T_MAX)
+    T_source_max: float = Field(200.0, ge=ENVELOPE_T_MIN, le=ENVELOPE_T_MAX)
+    T_sink_min: float = Field(0.0, ge=ENVELOPE_T_MIN, le=ENVELOPE_T_MAX)
+    T_sink_max: float = Field(250.0, ge=ENVELOPE_T_MIN, le=ENVELOPE_T_MAX)
+    cop_min: float = Field(1.0, ge=0, le=ENVELOPE_COP_MAX)
+    cop_max: float = Field(20.0, ge=0, le=ENVELOPE_COP_MAX)
 
     # Shown in the results table so a custom entry is distinguishable at a glance.
     medium_sink: str = Field(default="Custom", max_length=40)
     hp_level: str = Field(default="1", max_length=10)
 
 
+
 class CopFormulaValidateRequest(BaseModel):
     """Check a formula (and preview one value) without running the optimisation."""
     expression: str = Field(max_length=500)
-    T_source: float = 60.0
-    T_sink: float = 110.0
+    T_source: float = Field(60.0, allow_inf_nan=False)
+    T_sink: float = Field(110.0, allow_inf_nan=False)
 
 
 class CopPointProfile(BaseModel):

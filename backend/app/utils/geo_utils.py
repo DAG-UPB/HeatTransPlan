@@ -5,6 +5,8 @@ Web Mercator projection + Haversine distance.
 
 from __future__ import annotations
 import math
+import threading
+import time
 from typing import Tuple
 
 import requests
@@ -81,11 +83,39 @@ def manhattan_spherical_distance(lat1: float, lon1: float, lat2: float, lon2: fl
     return haversine_distance(lat1, lon1, lat2, lon1) + haversine_distance(lat2, lon1, lat2, lon2)
 
 
+# Nominatim's usage policy: at most one request per second from the whole
+# server, or it blocks the server's address. Requests wait for their turn, but
+# not long: a queue of waiting lookups would hold the threads every other
+# endpoint runs on.
+NOMINATIM_INTERVAL = 1.0
+NOMINATIM_MAX_WAIT = 3.0
+_nominatim_lock = threading.Lock()
+_nominatim_next = 0.0
+
+
+class GeocodeBusy(RuntimeError):
+    pass
+
+
+def _nominatim_turn() -> None:
+    """Wait for this request's one-second slot (process-wide)."""
+    global _nominatim_next
+    with _nominatim_lock:
+        now = time.monotonic()
+        slot = max(now, _nominatim_next)
+        if slot - now > NOMINATIM_MAX_WAIT:
+            raise GeocodeBusy("The address search is busy; try again in a few seconds.")
+        _nominatim_next = slot + NOMINATIM_INTERVAL
+    if slot > now:
+        time.sleep(slot - now)
+
+
 def geocode_address(query: str) -> list[dict]:
     """
     Geocode an address using Nominatim.
     Returns list of {display_name, lat, lon} results.
     """
+    _nominatim_turn()
     url = "https://nominatim.openstreetmap.org/search"
     params = {"q": query, "format": "json", "limit": 5}
     headers = {"User-Agent": "HeatTransPlan/1.0"}

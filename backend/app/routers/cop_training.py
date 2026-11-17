@@ -16,12 +16,20 @@ from app.services.cop_training import model as cop_model
 router = APIRouter()
 
 
+def _read_upload(file: UploadFile) -> bytes:
+    """The upload's bytes, but never more than one past the size limit:
+    read_table then says the file is too large."""
+    return file.file.read(cop_data.MAX_FILE_BYTES + 1)
+
+
+# Plain `def`, like /train: parsing a spreadsheet is CPU work, and FastAPI
+# runs these in its thread pool instead of on the event loop.
 @router.post("/inspect")
-async def inspect_data(file: UploadFile = File(...), sheet: Optional[str] = Form(None)):
+def inspect_data(file: UploadFile = File(...), sheet: Optional[str] = Form(None)):
     """The uploaded table's columns, row count, a preview, and a first guess
     of which column holds what. For Excel: its sheets and the one read
     (`sheet`, or the first with a COP column)."""
-    content = await file.read()
+    content = _read_upload(file)
     name = file.filename or ""
     try:
         sheet = sheet or cop_data.default_sheet(name, content)
@@ -49,7 +57,7 @@ def train_model(
         cols = ColumnMapping(**json.loads(mapping))
     except (ValueError, ValidationError) as exc:
         raise HTTPException(422, f"Column mapping: {exc}") from exc
-    content = file.file.read()
+    content = _read_upload(file)
     try:
         df = cop_data.read_table(file.filename or "", content, sheet)
         return cop_model.train(df, cols, name[:60], model_type, degree)

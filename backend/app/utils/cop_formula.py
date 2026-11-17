@@ -111,6 +111,25 @@ def _check_pow(node: ast.BinOp) -> None:
         raise FormulaError(f"Exponents are limited to ±{MAX_EXPONENT}.")
 
 
+class _IntsToFloats(ast.NodeTransformer):
+    """Make every number literal a float.
+
+    A literal exponent is still not enough on its own: in
+    ``((9 ** 64) ** 64) ** 64`` each exponent is a small literal, yet Python
+    works the integers out exactly, with millions of digits, for minutes. Float
+    powers overflow at once instead (OverflowError, reported as an invalid
+    formula), and with no integer literal left nothing else can grow one.
+    """
+    def visit_Constant(self, node: ast.Constant) -> ast.AST:
+        if isinstance(node.value, (int, bool)) and not isinstance(node.value, float):
+            try:
+                value = float(node.value)
+            except OverflowError as exc:
+                raise FormulaError("A number in the formula is too large.") from exc
+            return ast.copy_location(ast.Constant(value=value), node)
+        return node
+
+
 class _IfExpToWhere(ast.NodeTransformer):
     """Transform `A if C else B` to `where(C, A, B)` for elementwise array evaluation."""
     def visit_IfExp(self, node: ast.IfExp) -> ast.AST:
@@ -176,6 +195,7 @@ def compile_formula(expression: str, variables: Iterable[str] = None):
         if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Pow):
             _check_pow(node)
 
+    tree = ast.fix_missing_locations(_IntsToFloats().visit(tree))
     return compile(tree, "<cop-formula>", "eval")
 
 
@@ -216,12 +236,15 @@ def evaluate_formula(code, variables: Mapping[str, np.ndarray]) -> np.ndarray:
     try:
         with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
             result = eval(code, env)  # noqa: S307 - AST whitelisted, no builtins
+            # Inside the try: a negative number to a fractional power is a
+            # complex number in Python, which is no COP either.
+            array = np.asarray(result, dtype=float)
     except FormulaError:
         raise
+    except OverflowError as exc:
+        raise FormulaError("The formula gives a number too large to compute.") from exc
     except Exception as exc:
         raise FormulaError(f"The formula could not be evaluated: {exc}") from exc
-
-    array = np.asarray(result, dtype=float)
 
     # A formula that ignores its inputs (e.g. "4.5") returns a scalar; broadcast
     # it so callers always get one COP per grid point.

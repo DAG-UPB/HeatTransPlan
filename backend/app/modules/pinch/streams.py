@@ -1,19 +1,26 @@
 import csv
-import tempfile
 
 
-def write_streams_csv(t_min, streams):
-    """Write streams in the file format Streams reads; returns the file's path.
+class StreamsInput(str):
+    """Streams handed to Pinch in memory, in place of a streams file.
 
-    `streams` yields (CP, T_supply, T_target) rows. The caller deletes the file.
+    Pinch and HeatPumpIntegration take a file name and only cut a label from
+    it (name[:-4]); Streams below reads the rows. So this is a name that
+    carries its rows: the request's data never becomes a file on the server.
     """
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, newline="") as tmp:
-        writer = csv.writer(tmp)
-        writer.writerow(["Tmin", str(t_min)])
-        writer.writerow(["CP", "TSUPPLY", "TTARGET"])
-        for cp, ts, tt in streams:
-            writer.writerow([str(cp), str(ts), str(tt)])
-    return tmp.name
+    rows: list
+
+
+def streams_input(t_min, streams):
+    """The rows of a streams file (Tmin, header, one row per stream), in memory.
+
+    `streams` yields (CP, T_supply, T_target). The values are written as text,
+    exactly as the file held them, so Streams parses the same numbers.
+    """
+    data = StreamsInput("streams.csv")
+    data.rows = [["Tmin", str(t_min)], ["CP", "TSUPPLY", "TTARGET"]]
+    data.rows += [[str(cp), str(ts), str(tt)] for cp, ts, tt in streams]
+    return data
 
 
 class Streams:
@@ -31,10 +38,13 @@ class Streams:
 
 
 
-        with open(streams_data_file, newline='') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                self._rawStreamsData.append(row)
+        if isinstance(streams_data_file, StreamsInput):
+            self._rawStreamsData = [list(row) for row in streams_data_file.rows]
+        else:
+            with open(streams_data_file, newline='') as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    self._rawStreamsData.append(row)
 
         if (self._rawStreamsData[0][0].strip() != 'Tmin' or
                 [ item.strip() for item in self._rawStreamsData[1] ] != ['CP', 'TSUPPLY', 'TTARGET']):

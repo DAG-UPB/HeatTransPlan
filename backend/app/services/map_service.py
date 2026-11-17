@@ -9,9 +9,38 @@ from typing import Dict, Any
 
 from PIL import Image, ImageDraw, ImageFont
 
+# A map snapshot is a screenshot of the map pane, a few megapixels. Pillow's own
+# guard only warns below ~179 MP, and such an image decodes to gigabytes, so
+# both the text and the picture are checked before anything is decoded.
+MAX_IMAGE_PIXELS = 20_000_000
+MAX_IMAGE_B64 = 30 * 1024 * 1024
+
 from app.models.report import ReportRequest
 from app.utils.geo_utils import snapshot_lonlat_to_pixel
 from app.utils.graphics_utils import draw_smooth_ellipse
+
+
+class MapImageTooLarge(ValueError):
+    """The map snapshot sent is larger than the limits above."""
+
+
+def _open_snapshot(b64: str):
+    """The snapshot as an RGBA image; None when it is no image. Its size is
+    read from the header before the pixels are decoded."""
+    if len(b64) > MAX_IMAGE_B64:
+        raise MapImageTooLarge(f"The map image is larger than {MAX_IMAGE_B64 // (1024 * 1024)} MB.")
+    try:
+        img = Image.open(BytesIO(base64.b64decode(b64)))
+    except Exception:
+        return None
+    w, h = img.size
+    if w * h > MAX_IMAGE_PIXELS:
+        raise MapImageTooLarge(
+            f"The map image is {w} x {h} pixels; at most {MAX_IMAGE_PIXELS // 1_000_000} megapixels are supported.")
+    try:
+        return img.convert("RGBA")
+    except Exception:
+        return None
 
 
 def generate_process_map_b64(req: ReportRequest) -> str:
@@ -28,10 +57,8 @@ def generate_process_map_b64(req: ReportRequest) -> str:
         chosen_b64 = snapshots_dict.get(active_base)
         if not chosen_b64:
             return ""
-        try:
-            chosen_bytes = base64.b64decode(chosen_b64)
-            base_img = Image.open(BytesIO(chosen_bytes)).convert("RGBA")
-        except Exception:
+        base_img = _open_snapshot(chosen_b64)
+        if base_img is None:
             return ""
 
     w, h = base_img.size

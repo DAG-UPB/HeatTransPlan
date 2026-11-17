@@ -34,12 +34,10 @@ const symbol = (label: string) => {
   );
 };
 
+// The header sticks as a whole (thead): its two rows then stay stacked.
 const thStyle = {
   cursor: 'pointer',
   userSelect: 'none' as const,
-  position: 'sticky' as const,
-  top: 0,
-  zIndex: 1,
   // Headers carry a label plus a help bulb plus a sort arrow; letting them
   // wrap is what made rows two lines tall.
   whiteSpace: 'nowrap' as const,
@@ -114,19 +112,22 @@ export default function HPIOptimizationTable({
 }: Props) {
   const { t, i18n } = useTranslation();
 
-  // Tints matching the heat pump overlay in the chart, so a column can be read
-  // back to the arrow it belongs to. Kept pale: these sit behind black text on
-  // alternating row stripes, so anything saturated is hard on the eyes.
+  // Each section's tint, matching the heat pump overlay in the chart (the
+  // pump's lilac, the sink's blue, the source's red). Only the header carries
+  // it; the values below stay plain, and a line marks where a section starts.
   const sinkCell = { backgroundColor: isDark ? 'rgba(59,130,246,0.14)' : 'rgba(143,174,224,0.20)' };
   const sourceCell = {
     backgroundColor: isDark ? 'rgba(248,113,113,0.14)' : 'rgba(232,139,139,0.20)',
   };
-  const elCell = { backgroundColor: isDark ? 'rgba(110,231,183,0.13)' : 'rgba(95,174,140,0.18)' };
-  // COP belongs to the heat pump itself, so it takes the box's lilac.
   const copCell = {
     backgroundColor: isDark ? 'rgba(167,139,250,0.16)' : 'rgba(124,58,237,0.13)',
-    fontWeight: 600,
   };
+  // Where one section ends and the next starts (pump | sink | source): a line
+  // clearly darker than the grid, in header and rows alike.
+  const divider: CSSProperties = {
+    borderLeft: '2px solid color-mix(in srgb, var(--text-main) 40%, transparent)',
+  };
+  const startsSection = (key: SortKey) => key === 'medium_sink' || key === 'Q_source';
 
   // Carnot is not a fitted correlation like the other archetypes — it is the
   // thermodynamic relation between the two temperatures — so it gets its own
@@ -142,6 +143,19 @@ export default function HPIOptimizationTable({
         : t('optimization.theoretical_hint');
 
   const icon = (key: SortKey) => <SortIcon sortConfigs={sortConfigs} sortKey={key} />;
+  // A header cell in its group's colour: the pale tint laid over a solid
+  // surface, as the header stays put while the rows scroll beneath it.
+  const solid = (colour: string): CSSProperties => ({
+    background: `linear-gradient(${colour}, ${colour}), var(--surface)`,
+  });
+  // Each column header takes its group's colour, as the group row above it:
+  // the heat pump's lilac, the sink's blue, the source's red.
+  const groupColour = (key: SortKey) =>
+    (['medium_sink', 'Q_demand', 'T_sink'] as SortKey[]).includes(key)
+      ? sinkCell.backgroundColor
+      : (['Q_source', 'T_source'] as SortKey[]).includes(key)
+        ? sourceCell.backgroundColor
+        : copCell.backgroundColor;
   const header = (
     key: SortKey,
     label: ReactNode,
@@ -156,7 +170,11 @@ export default function HPIOptimizationTable({
       sortKey={key}
       onSort={onSort}
       icon={opts.noIcon ? null : icon(key)}
-      style={opts.style}
+      style={{
+        ...(opts.style ?? thStyle),
+        ...solid(groupColour(key)),
+        ...(startsSection(key) ? divider : {}),
+      }}
     />
   );
 
@@ -166,6 +184,21 @@ export default function HPIOptimizationTable({
         <>
           <table className="pa-table pa-hp-table">
             <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
+              {/* Two rows: what a column belongs to (the heat pump, its sink,
+                  its source), then what it is. Short labels; the help bulb
+                  of each column keeps the full name and explanation. */}
+              <tr className="pa-hp-groups">
+                {/* The heat pump's own lilac, as its COP column and its box. */}
+                <th colSpan={6} style={solid(copCell.backgroundColor)}>
+                  {t('optimization.panel.groups.heat_pump')}
+                </th>
+                <th colSpan={4} style={{ ...solid(sinkCell.backgroundColor), ...divider }}>
+                  {t('optimization.panel.groups.sink')}
+                </th>
+                <th colSpan={3} style={{ ...solid(sourceCell.backgroundColor), ...divider }}>
+                  {t('optimization.panel.groups.source')}
+                </th>
+              </tr>
               <tr>
                 {header(
                   'theoretical',
@@ -175,17 +208,23 @@ export default function HPIOptimizationTable({
                   { style: typeThStyle }
                 )}
                 {header(
+                  'refrigerant',
+                  t('optimization.panel.headers.refrigerant'),
+                  t('optimization.title_refrigerant'),
+                  t('optimization.tooltip_refrigerant')
+                )}
+                {header(
+                  'hp_level',
+                  t('optimization.panel.sub.compressors'),
+                  t('optimization.title_hp_stages'),
+                  t('optimization.tooltip_hp_stages')
+                )}
+                {header(
                   'refrigerant_type',
-                  t('optimization.panel.headers.refrigerant_type'),
+                  t('optimization.panel.sub.refrigerant_type'),
                   t('optimization.title_refrigerant_type'),
                   t('optimization.tooltip_refrigerant_type'),
                   { style: narrowThStyle }
-                )}
-                {header(
-                  'medium_sink',
-                  t('optimization.panel.headers.medium_sink'),
-                  t('optimization.title_medium_sink'),
-                  t('optimization.desc_medium_sink')
                 )}
                 {header(
                   'COP',
@@ -194,63 +233,55 @@ export default function HPIOptimizationTable({
                   t('optimization.tooltip_cop')
                 )}
                 {header(
-                  'Q_demand',
-                  symbol(t('optimization.panel.headers.q_sink')),
-                  t('optimization.title_q_sink'),
-                  t('optimization.tooltip_q_sink')
-                )}
-                {header(
-                  'Q_source',
-                  symbol(t('optimization.panel.headers.q_source')),
-                  t('optimization.title_q_source'),
-                  t('optimization.tooltip_q_source')
-                )}
-                {header(
                   'W_el',
                   symbol(t('optimization.panel.headers.w_el')),
                   t('optimization.title_w_el'),
                   t('optimization.tooltip_w_el')
                 )}
                 {header(
+                  'medium_sink',
+                  t('optimization.panel.sub.medium'),
+                  t('optimization.title_medium_sink'),
+                  t('optimization.desc_medium_sink')
+                )}
+                {header(
+                  'Q_demand',
+                  <span style={{ textTransform: 'none' }}>{t('optimization.panel.sub.q')}</span>,
+                  t('optimization.title_q_sink'),
+                  t('optimization.tooltip_q_sink')
+                )}
+                {header(
                   'T_sink',
-                  `${t('optimization.title_actual_sink_temp')} [°C]`,
+                  t('optimization.panel.sub.temp'),
                   t('optimization.title_actual_sink_temp'),
                   t('optimization.desc_actual_sink_temp')
                 )}
                 {header(
                   'T_sink',
-                  `${t('optimization.title_shifted_sink_temp')} (T + ${tMin / 2} K) [°C]`,
+                  t('optimization.panel.sub.temp_shifted', { k: `+${tMin / 2}` }),
                   t('optimization.title_shifted_sink_temp'),
                   t('optimization.desc_shifted_sink_temp'),
                   { noIcon: true }
                 )}
                 {header(
+                  'Q_source',
+                  <span style={{ textTransform: 'none' }}>{t('optimization.panel.sub.q')}</span>,
+                  t('optimization.title_q_source'),
+                  t('optimization.tooltip_q_source')
+                )}
+                {header(
                   'T_source',
-                  `${t('optimization.title_actual_source_temp')} [°C]`,
+                  t('optimization.panel.sub.temp'),
                   t('optimization.title_actual_source_temp'),
                   t('optimization.desc_actual_source_temp')
                 )}
                 {header(
                   'T_source',
-                  `${t('optimization.title_shifted_source_temp')} (T − ${tMin / 2} K) [°C]`,
+                  t('optimization.panel.sub.temp_shifted', { k: `−${tMin / 2}` }),
                   t('optimization.title_shifted_source_temp'),
                   t('optimization.desc_shifted_source_temp'),
                   { noIcon: true }
                 )}
-                {header(
-                  'refrigerant',
-                  t('optimization.panel.headers.refrigerant'),
-                  t('optimization.title_refrigerant'),
-                  t('optimization.tooltip_refrigerant')
-                )}
-                {header(
-                  'hp_level',
-                  t('optimization.panel.headers.hp_stages'),
-                  t('optimization.title_hp_stages'),
-                  t('optimization.tooltip_hp_stages')
-                )}
-                <th style={thStyle}>{t('optimization.panel.headers.t_vorlauf_quelle')}</th>
-                <th style={thStyle}>{t('optimization.panel.headers.t_ruecklauf_senke')}</th>
               </tr>
             </thead>
             <tbody>
@@ -355,7 +386,10 @@ export default function HPIOptimizationTable({
                                       i18nKey="optimization.real_point"
                                       values={{
                                         name: pt.refrigerant,
-                                        medium: t(`optimization.medium.${pt.medium_sink}`, pt.medium_sink),
+                                        medium: t(
+                                          `optimization.medium.${pt.medium_sink}`,
+                                          pt.medium_sink
+                                        ),
                                         stages: pt.hp_level,
                                         source: oneDecimal(pt.T_source),
                                         sink: oneDecimal(pt.T_sink),
@@ -370,13 +404,16 @@ export default function HPIOptimizationTable({
                         )}
                       </div>
                     </td>
-                    {/* Refrigerant type, medium and stage count describe a
+                    {/* In the header's group order: heat pump, sink, source.
+                        Refrigerant, stage count, type and medium describe a
                         trained machine; an archetype has none of them. */}
+                    <td>{pt.theoretical ? '' : refName}</td>
+                    <td>{pt.theoretical ? '' : pt.hp_level}</td>
                     <td>{pt.theoretical ? '' : pt.refrigerant_type}</td>
-                    <td>{pt.theoretical ? '' : pt.medium_sink}</td>
-                    <td style={copCell}>{pt.COP.toFixed(2)}</td>
+                    <td style={{ fontWeight: 600 }}>{pt.COP.toFixed(2)}</td>
+                    <td>{(pt.Q_demand / pt.COP).toFixed(1)}</td>
+                    <td style={divider}>{pt.theoretical ? '' : pt.medium_sink}</td>
                     <td
-                      style={sinkCell}
                       title={
                         pt.source_limited && pt.Q_demand_total
                           ? t('ui.source_limited', {
@@ -398,16 +435,11 @@ export default function HPIOptimizationTable({
                         </span>
                       ) : null}
                     </td>
-                    <td style={sourceCell}>{((pt.Q_demand * (pt.COP - 1)) / pt.COP).toFixed(1)}</td>
-                    <td style={elCell}>{(pt.Q_demand / pt.COP).toFixed(1)}</td>
-                    <td style={sinkCell}>{(pt.T_sink - tMin / 2).toFixed(1)}</td>
-                    <td style={sinkCell}>{pt.T_sink.toFixed(1)}</td>
-                    <td style={sourceCell}>{(pt.T_source + tMin / 2).toFixed(1)}</td>
-                    <td style={sourceCell}>{pt.T_source.toFixed(1)}</td>
-                    <td>{pt.theoretical ? '' : refName}</td>
-                    <td>{pt.theoretical ? '' : pt.hp_level}</td>
-                    <td style={sourceCell}>{pt.T_vorlauf_quelle?.toFixed(1) ?? '–'}</td>
-                    <td style={sinkCell}>{pt.T_ruecklauf_senke?.toFixed(1) ?? '–'}</td>
+                    <td>{(pt.T_sink - tMin / 2).toFixed(1)}</td>
+                    <td>{pt.T_sink.toFixed(1)}</td>
+                    <td style={divider}>{((pt.Q_demand * (pt.COP - 1)) / pt.COP).toFixed(1)}</td>
+                    <td>{(pt.T_source + tMin / 2).toFixed(1)}</td>
+                    <td>{pt.T_source.toFixed(1)}</td>
                   </tr>
                 );
               })}

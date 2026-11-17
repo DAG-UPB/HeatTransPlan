@@ -1,10 +1,33 @@
 """The economic analysis section of a scenario page."""
 
+import re
 from html import escape
 from typing import Any, Dict, Optional
 
 from app.services.report.figures import _spec_chart
 from app.services.report.formatting import _part
+
+
+# The colours come from the request and land in style attributes, where
+# escaping alone does not stop CSS from being injected: only a plain colour is
+# let through, anything else falls back to the report's grey.
+_COLOR = re.compile(
+    r"#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})"  # #RGB, #RRGGBB, with alpha
+    r"|[a-zA-Z]{3,20}"  # a named colour
+    r"|(?:rgb|rgba|hsl|hsla)\([0-9.,%\s]{1,40}\)"
+)
+_FALLBACK = "#64748B"
+
+
+def _color(value: Any) -> str:
+    v = str(value or "").strip()
+    return v if _COLOR.fullmatch(v) else _FALLBACK
+
+
+def _tint(value: Any) -> str:
+    """The colour at 6 % opacity (hex alpha 0F), as the page draws a KPI card."""
+    v = str(value or "").strip()
+    return f"{v}0F" if re.fullmatch(r"#[0-9a-fA-F]{6}", v) else "transparent"
 
 
 def _render_economics(econ: Optional[Dict[str, Any]], texts: Dict[str, str], anchor: str = "") -> str:
@@ -19,9 +42,9 @@ def _render_economics(econ: Optional[Dict[str, Any]], texts: Dict[str, str], anc
     lab = econ.get("labels", {})
 
     kpis = "".join(
-        f"<div class='econ-kpi' style='border-left-color:{k['color']};background:{k['color']}0F'>"
+        f"<div class='econ-kpi' style='border-left-color:{_color(k.get('color'))};background:{_tint(k.get('color'))}'>"
         f"<div class='metric-label'>{escape(k['label'])}</div>"
-        f"<div class='econ-kpi-value' style='color:{k['valueColor']}'>{escape(k['value'])} "
+        f"<div class='econ-kpi-value' style='color:{_color(k.get('valueColor'))}'>{escape(k['value'])} "
         f"<span class='econ-unit'>{escape(k['unit'])}</span></div>"
         + (f"<div class='econ-kpi-sub'>{escape(k['sub'])}</div>" if k.get('sub') else "")
         + "</div>"
@@ -41,7 +64,7 @@ def _render_economics(econ: Optional[Dict[str, Any]], texts: Dict[str, str], anc
         body = ""
         for r in tbl["rows"]:
             cells = r["cells"]
-            style = f" style='color:{r['color']};font-weight:600'" if r.get("color") else ""
+            style = f" style='color:{_color(r['color'])};font-weight:600'" if r.get("color") else ""
             body += (f"<tr><td>{escape(cells[0])}</td><td>{escape(cells[1])}</td>"
                      f"<td style='text-align:right'>{escape(cells[2])}</td>"
                      f"<td style='text-align:right'{style}>{escape(cells[3])}</td></tr>")

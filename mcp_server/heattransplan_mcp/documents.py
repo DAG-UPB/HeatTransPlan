@@ -12,6 +12,33 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 MAX_ROWS = 500  # per sheet; enough for stream lists, not a data dump
+# A zip can unpack to far more than it holds (a "zip bomb"): limits on what
+# is unpacked, per part and per document, and on the number of parts.
+MAX_PART_BYTES = 50 * 1024 * 1024
+MAX_TOTAL_BYTES = 100 * 1024 * 1024
+MAX_PARTS = 5000
+
+
+class _Zip:
+    """A zip read within those limits. The sizes in its directory bound what
+    zipfile unpacks (it stops there and checks the CRC), so checking them
+    before reading is enough."""
+
+    def __init__(self, z: zipfile.ZipFile):
+        if len(z.infolist()) > MAX_PARTS:
+            raise ValueError(f"The document has too many parts (over {MAX_PARTS}).")
+        self.z = z
+        self.left = MAX_TOTAL_BYTES
+
+    def namelist(self) -> List[str]:
+        return self.z.namelist()
+
+    def read(self, name: str) -> bytes:
+        size = self.z.getinfo(name).file_size
+        if size > MAX_PART_BYTES or size > self.left:
+            raise ValueError("The document unpacks to too much data to read here.")
+        self.left -= size
+        return self.z.read(name)
 
 
 def _name(el: ET.Element) -> str:
@@ -37,13 +64,13 @@ def _blocks(el: ET.Element, out: List[Any]) -> None:
             _blocks(child, out)
 
 
-def _docx(z: zipfile.ZipFile) -> Dict[str, Any]:
+def _docx(z: _Zip) -> Dict[str, Any]:
     content: List[Any] = []
     _blocks(ET.fromstring(z.read("word/document.xml")), content)
     return {"content": content}
 
 
-def _pptx(z: zipfile.ZipFile) -> Dict[str, Any]:
+def _pptx(z: _Zip) -> Dict[str, Any]:
     names = [n for n in z.namelist() if re.fullmatch(r"ppt/slides/slide\d+\.xml", n)]
     slides = []
     for n in sorted(names, key=lambda n: int(re.search(r"\d+", n.rsplit("/", 1)[1]).group())):
@@ -60,7 +87,7 @@ def _col(ref: str) -> int:
     return n - 1
 
 
-def _xlsx(z: zipfile.ZipFile) -> Dict[str, Any]:
+def _xlsx(z: _Zip) -> Dict[str, Any]:
     ns = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
     rel = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
     shared = []
@@ -112,4 +139,4 @@ def read(name: str, data: bytes) -> Dict[str, Any]:
                          "Excel (.xlsx) and text/CSV work. Save older .doc/.ppt/.xls in the new "
                          "format; read PDFs and images yourself if you can.")
     with zipfile.ZipFile(io.BytesIO(data)) as z:
-        return {"file": name, **READERS[suffix](z)}
+        return {"file": name, **READERS[suffix](_Zip(z))}

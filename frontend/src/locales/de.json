@@ -328,7 +328,7 @@
     "added_process": "Prozess {{n}} hinzugefügt"
   },
   "optimization": {
-    "search_size": "Durchsucht: {{combinations}} Kombinationen ({{pumps}} Wärmepumpen × {{pairs}} Paare aus Quell- und Senkentemperatur). Der COP wurde für {{evaluations}} davon berechnet, dort wo die Wärmepumpe arbeiten kann; {{predictions}} davon sind Vorhersagen des COP-Modells, der Rest Formeln der Archetypen. Ergebnis: {{feasible}} machbare Punkte.",
+    "search_size": "Durchsucht: {{combinations}} Kombinationen ({{pumps}} Wärmepumpen und Referenzmodelle × {{pairs}} Paare aus Quell- und Senkentemperatur). Der COP wurde für {{evaluations}} davon berechnet, dort wo die Wärmepumpe arbeiten kann; {{predictions}} davon sind Vorhersagen eines COP-Modells, der Rest stammt aus Formeln (Archetypen, Carnot-Referenz oder Ihre eigene). Ergebnis: {{feasible}} machbare Punkte.",
     "search_time": "Berechnet in {{seconds}} s.",
     "tooltip_refrigerant_type": "Klassifizierung des verwendeten Kältemittels. Natürliche Kältemittel wie Ammoniak (R717) und CO₂ (R744) weisen ein geringes Treibhauspotenzial (GWP) auf, können aber giftig und/oder entflammbar sein. Herkömmlich verwendete synthetische Kältemittel wie HFKW und HFO unterliegen aufgrund ihrer Umweltauswirkungen regulatorischen Anforderungen.",
     "tooltip_cop": "Leistungszahl (<span class='notranslate'>COP</span>) = bereitgestellte Wärmeleistung / eingesetzte elektrische Leistung. Höhere <span class='notranslate'>COP</span>-Werte bedeuten ein günstigeres Verhältnis beider Leistungen: Die Anlage läuft effizienter.",
@@ -342,19 +342,23 @@
       "title": "Integration mit Wärmepumpenmodell und Optimierung",
       "instruction": "Klicken Sie zum Sortieren auf eine Spaltenüberschrift. Klicken Sie auf einen Punkt im Diagramm, um Details anzuzeigen und ihn der Tabelle hinzuzufügen.",
       "headers": {
-        "refrigerant_type": "KÄLTEM.",
-        "medium_sink": "MEDIUM SENKE",
         "cop": "COP",
-        "q_sink": "Q_Senke (kW)",
-        "q_source": "Q_Quelle (kW)",
-        "t_sink": "T_Senke (°C)",
-        "t_source": "T_Quelle (°C)",
         "refrigerant": "KÄLTEMITTEL",
-        "hp_stages": "ANZ. VERDICHTER",
-        "t_vorlauf_quelle": "VORLAUF QUELLE (°C)",
-        "t_ruecklauf_senke": "RÜCKLAUF SENKE (°C)",
         "entry_type": "TYP",
         "w_el": "P_el (kW)"
+      },
+      "groups": {
+        "heat_pump": "Wärmepumpe",
+        "sink": "Senke",
+        "source": "Quelle"
+      },
+      "sub": {
+        "compressors": "VERDICHTER",
+        "refrigerant_type": "KÄLTEM.-TYP",
+        "medium": "MEDIUM",
+        "q": "Q (kW)",
+        "temp": "TEMP. (°C)",
+        "temp_shifted": "TEMP. VERSCHOBEN ({{k}} K)"
       },
       "filters": {
         "all": "Alle",
@@ -602,7 +606,8 @@
     "apply": "Übernehmen",
     "fix_formula_first": "Bitte zuerst die Formel korrigieren",
     "interval_example": "Beispiel mit Intervallen",
-    "interval_example_title": "Bedingte Logik für Intervalle (zur besseren Lesbarkeit formatiert)"
+    "interval_example_title": "Bedingte Logik für Intervalle (zur besseren Lesbarkeit formatiert)",
+    "built_in_title": "Mitgelieferte Formeln — zum Übernehmen anklicken"
   },
   "help": {
     "title": "Analyse-Leitfaden",
@@ -1074,7 +1079,7 @@
     "setup_intro": "Jeder KI-Agent, der MCP (Model Context Protocol) unterstützt, kann mit HeatTransPlan arbeiten. Nichts zu installieren.",
     "setup_add": "HeatTransPlan im Agenten als MCP-Server mit dieser Adresse eintragen:",
     "setup_key": "Dieser Server braucht einen API-Schlüssel: dem Agenten als Header X-API-Key (oder Authorization: Bearer <Schlüssel>) mitgeben.",
-    "setup_connect": "Auf „KI verbinden“ klicken und dem Agenten den Sitzungscode nennen, z. B. „Nutze die HeatTransPlan-Sitzung AB12CD“. Er sieht und steuert dann diese Seite, bis die Verbindung getrennt wird.",
+    "setup_connect": "Auf „KI verbinden“ klicken und dem Agenten den Sitzungscode nennen, z. B. „Nutze die HeatTransPlan-Sitzung 3f9a1c7e“. Er sieht und steuert dann diese Seite, bis die Verbindung getrennt wird.",
     "setup_files": "Ohne „KI verbinden“ kann der Agent nur die Methode erklären und Dokumente lesen; er sieht, erstellt und ändert nichts. Nach dem Trennen oder Schließen der Seite gilt das wieder.",
     "setup_guided": "Dann den Agenten fragen, z. B.: „Führe mich durch eine HeatTransPlan-Studie.“ Er geht Seite für Seite vor, fragt nach, was er braucht, und liest angehängte Word-, PowerPoint- und Excel-Dateien oder eingefügte Zahlen.",
     "setup_local": "Diese App läuft auf diesem Rechner (http): einen Agenten verwenden, der ebenfalls hier läuft, etwa eine Desktop-App, einen Code-Editor oder einen Terminal-Agenten. Agenten in der Cloud, etwa Web-Chats, erreichen sie nicht.",
@@ -1099,6 +1104,14 @@
     "confirm_remove_subprocess_plan": "Den Hintergrundplan eines Diagramms entfernen?",
     "confirm_delete_scenario": "Ein gespeichertes Szenario löschen?",
     "confirm_other": "Der KI das erlauben: {{name}}?",
+    "confirm_set_project_empty": "Das ganze Projekt auf dieser Seite durch ein leeres ersetzen? Alle Prozesse, Prozessströme und gespeicherten Szenarien darauf werden entfernt.",
+    "confirm_delete_scenario_named": "Das gespeicherte Szenario „{{name}}“ löschen?",
+    "confirm_remove_subprocess_plan_named": "Den Hintergrundplan von „{{name}}“ entfernen?",
+    "confirm_replace_subprocess_plan_named": "Den Hintergrundplan von „{{name}}“ ersetzen?",
+    "confirm_replace_site_plan": "Den Lageplan auf der Karte ersetzen?",
+    "confirm_edit_removes": "Dieser Schritt löscht Prozesse, Teilprozesse oder Prozessströme.",
+    "confirm_edit_removes_more": "… und {{name}} weitere.",
+    "confirm_note": "Diese Seite hat geprüft, was die Anfrage löschen oder ersetzen würde. Ohne Ihre Erlaubnis wird nichts gelöscht oder ersetzt, egal wer fragt.",
     "setup_where": "In den Einstellungen des Agenten für MCP-Server (bei manchen: Connectors oder Werkzeuge) einen Server vom Typ HTTP, auch „Streamable HTTP“, mit dieser Adresse hinzufügen. Kein Befehl, nichts zu installieren.",
     "setup_examples": "Beispiele: Claude, ChatGPT, Mistral, Gemini",
     "setup_docs": "Vollständige Anleitung in der Dokumentation: Einrichtung, alle Werkzeuge, Sicherheit",
@@ -1207,9 +1220,26 @@
     "page_help": "Diese Seite erklären"
   },
   "hp_view": {
-    "title": "Temperaturen der Wärmepumpe",
-    "open": "Modell 2 Temperaturen",
+    "title": "COP-Modell",
+    "open": "COP-Modell",
     "open_hint": "Das COP-Modell mit 2 Temperaturen (Quelle aus, Senke aus): die Wärmepumpe gezeichnet, Werte lassen sich ausprobieren, der COP wird angezeigt",
+    "tab_pump": "Wärmepumpe",
+    "tab_model": "COP-Modell",
+    "model": {
+      "inputs": "EINGÄNGE",
+      "output": "AUSGANG",
+      "name": "COP-Modell",
+      "kind_2t": "trainiert, 2 Temperaturen",
+      "cop_name": "Leistungszahl",
+      "cop_meaning": "COP = abgegebene Wärme ÷ eingesetzter Strom. {{cop}} heißt: 1 kW Strom ergibt {{cop}} kW Wärme.",
+      "cop_meaning_none": "COP = abgegebene Wärme ÷ eingesetzter Strom.",
+      "refrigerant": "Kältemittel",
+      "stages": "Verdichter",
+      "medium": "Senkenmedium",
+      "medium_short": "Medium",
+      "one_column_note": "Kältemittel und Verdichter sind ein Modelleingang (z. B. „Butane_2“)"
+    },
+    "morph_label": "Von der Wärmepumpe zum COP-Modell",
     "pump": "Wärmepumpe",
     "scale": "Temperaturen auf der verschobenen Skala, wie die Optimierung sie nutzt (ΔTmin/2 = {{half}} K).",
     "circuit1": "Kreis 1 · Abwärme",

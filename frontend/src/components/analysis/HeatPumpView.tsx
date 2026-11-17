@@ -1,9 +1,11 @@
-/** The heat pump drawn as its three circuits, with the two temperatures the
- *  2-temperature COP model reads (source out, sink out) as fields to try out:
- *  the COP answers live, and inputs the training data never had are named. */
+/** The COP model in two tabs. "Heat pump": the pump drawn as its three
+ *  circuits, with the two temperatures the 2-temperature COP model reads
+ *  (source out, sink out) as fields to try out; the COP answers live, and
+ *  inputs the training data never had are named. "COP model": the model as one
+ *  circle, its input variables going in and the COP coming out. */
 
 import { X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { rateCopPoint } from '../../api/analysis';
 import type {
@@ -32,6 +34,13 @@ const API: Record<Temp, SearchTemp> = {
   sinkOut: 'sink_out',
 };
 const TEMPS: Temp[] = ['sourceIn', 'sourceOut', 'sinkIn', 'sinkOut'];
+// The trained models' own column names for the temperatures.
+const GERMAN_COLUMN: Record<Temp, string> = {
+  sourceIn: 'T_Vorlauf_Quelle',
+  sourceOut: 'T_Rücklauf_Quelle',
+  sinkIn: 'T_Rücklauf_Senke',
+  sinkOut: 'T_Vorlauf_Senke',
+};
 const GERMAN: Record<Temp, string> = {
   sourceIn: 'T_vorlauf_Quelle',
   sourceOut: 'T_rücklauf_Quelle',
@@ -63,6 +72,21 @@ const SOURCE = '#0A75C4';
 const SINK = '#C138A0';
 const FLUID = '#7E3FA8';
 
+// The slider from the heat pump to its COP model: 0 shows the pump, 1 the
+// model. Between, each input travels from where it sits in the pump to its
+// circle in front of the model, the pump fades out and the model fades in.
+const smooth = (from: number, to: number, x: number) => {
+  const k = Math.min(1, Math.max(0, (x - from) / (to - from)));
+  return k * k * (3 - 2 * k);
+};
+const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+// The model's inputs as circles (radius INPUT_R) in a column, the model a
+// rectangle, the COP a circle on the right; all in the 1000 × 450 drawing.
+const INPUT_X = 250;
+const INPUT_R = 38;
+const MODEL = { x: 440, y: 160, w: 200, h: 170 };
+const OUTPUT = { x: 850, y: 245, r: 52 };
+
 export default function HeatPumpView({
   point,
   pinchTemperature,
@@ -90,6 +114,22 @@ export default function HeatPumpView({
   const [fixed, setFixed] = useState(startFixed);
   // The text of the field being typed in, so "6" on the way to "66" stays put.
   const [editing, setEditing] = useState<{ k: Temp; raw: string } | null>(null);
+  // 0 = the heat pump, 1 = the COP model (see smooth/lerp above).
+  const [morph, setMorph] = useState(0);
+  const glideFrame = useRef(0);
+  // Clicking an end of the slider glides there instead of jumping.
+  const glide = (to: number) => {
+    cancelAnimationFrame(glideFrame.current);
+    const from = morph;
+    const start = performance.now();
+    const step = (now: number) => {
+      const k = Math.min(1, (now - start) / 700);
+      setMorph(lerp(from, to, smooth(0, 1, k)));
+      if (k < 1) glideFrame.current = requestAnimationFrame(step);
+    };
+    glideFrame.current = requestAnimationFrame(step);
+  };
+  useEffect(() => () => cancelAnimationFrame(glideFrame.current), []);
   const searched = (k: Temp) => searchTemps.includes(API[k]);
   const value = (k: Temp) => (searched(k) ? grid[SIDE[k]] : fixed[k]);
   const temps: Record<Temp, number> = {
@@ -195,7 +235,8 @@ export default function HeatPumpView({
 
   const field = (k: Temp, x: number, y: number, color: string) => (
     <foreignObject x={x} y={y} width={200} height={72}>
-      <div className="hpv-temp" style={{ color }}>
+      {/* Out of the tab order while the model is shown and the pump faded. */}
+      <div className="hpv-temp" style={{ color }} inert={morph >= 0.5}>
         <div className="hpv-name">
           T<sub>{t(`hp_view.sub.${k}`)}</sub>
           <label
@@ -242,6 +283,105 @@ export default function HeatPumpView({
     </marker>
   );
 
+  // What the trained 2-temperature model reads: the two temperatures, the
+  // refrigerant with its number of compressors (one column, e.g. "Butane_2")
+  // and the sink medium. Compressors sit above the refrigerant so their paths
+  // (from the compressor at the top, from the name below the COP) never cross. Each starts where it sits in the heat pump drawing
+  // and ends as a circle in front of the model; the COP moves from the middle
+  // of the pump to the model's output.
+  const [refrigerantName, stages] = (() => {
+    const name = pump?.refrigerant ?? '';
+    const cut = name.lastIndexOf('_');
+    return cut > 0 ? [name.slice(0, cut), name.slice(cut + 1)] : [name, '–'];
+  })();
+  const pumpOpacity = 1 - smooth(0.3, 0.7, morph);
+  const modelOpacity = smooth(0.55, 0.9, morph);
+  const travel = smooth(0.05, 0.85, morph);
+  const inputY = (i: number) => 56 + i * 82;
+  type Input = {
+    key: string;
+    color: string;
+    from: [number, number];
+    symbol: ReactNode;
+    value: string;
+    name: string;
+    column: string;
+  };
+  const tempSymbol = (k: Temp) => (
+    <>
+      T
+      <tspan baselineShift="sub" fontSize="10">
+        {t(`hp_view.sub.${k}`)}
+      </tspan>
+    </>
+  );
+  const inputs: Input[] = [
+    {
+      key: 'sourceOut',
+      color: SOURCE,
+      from: [90, 82],
+      symbol: tempSymbol('sourceOut'),
+      value: `${temps.sourceOut.toFixed(1)} °C`,
+      name: t('hp_view.name.sourceOut'),
+      column: GERMAN_COLUMN.sourceOut,
+    },
+    {
+      key: 'sinkOut',
+      color: SINK,
+      from: [840, 82],
+      symbol: tempSymbol('sinkOut'),
+      value: `${temps.sinkOut.toFixed(1)} °C`,
+      name: t('hp_view.name.sinkOut'),
+      column: GERMAN_COLUMN.sinkOut,
+    },
+    {
+      key: 'stages',
+      color: FLUID,
+      from: [500, 75],
+      symbol: t('hp_view.model.stages'),
+      value: stages,
+      name: t('hp_view.model.stages'),
+      column: 'Kältemittel_stufen',
+    },
+    {
+      key: 'refrigerant',
+      color: FLUID,
+      from: [500, 248],
+      symbol: t('hp_view.model.refrigerant'),
+      value: refrigerantName || '–',
+      name: t('hp_view.model.refrigerant'),
+      column: 'Kältemittel_stufen',
+    },
+    {
+      key: 'medium',
+      color: SINK,
+      from: [880, 330],
+      // The full name ("Sink medium") is beside the circle; inside, the short one.
+      symbol: t('hp_view.model.medium_short'),
+      value: pump?.medium_sink ?? '–',
+      name: t('hp_view.model.medium'),
+      column: 'Medium_Senke',
+    },
+  ];
+  // One circle at full size (radius INPUT_R), drawn around (0, 0): moved and
+  // scaled by its group, so it grows as it travels.
+  const bubble = (color: string, r: number, symbol: ReactNode, value: string, big = false) => (
+    <>
+      <circle r={r} className="hpm-input" stroke={color} />
+      <text y={big ? -8 : -6} textAnchor="middle" className="hpm-symbol" fill={color}>
+        {symbol}
+      </text>
+      <text
+        y={big ? 20 : 14}
+        textAnchor="middle"
+        className={big ? 'hpv-cop' : 'hpm-value'}
+        fill={color}
+      >
+        {value}
+      </text>
+    </>
+  );
+
   return (
     <div className="cf-backdrop" role="presentation" onClick={onClose}>
       <div
@@ -260,140 +400,318 @@ export default function HeatPumpView({
 
         <div className="cf-body">
           <SearchSize />
+          <div className="hpv-morph">
+            <button type="button" className="hpv-morph-end" onClick={() => glide(0)}>
+              {t('hp_view.tab_pump')}
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={morph}
+              onChange={(e) => {
+                cancelAnimationFrame(glideFrame.current);
+                setMorph(Number(e.target.value));
+              }}
+              aria-label={t('hp_view.morph_label')}
+              aria-valuetext={morph < 0.5 ? t('hp_view.tab_pump') : t('hp_view.tab_model')}
+            />
+            <button type="button" className="hpv-morph-end" onClick={() => glide(1)}>
+              {t('hp_view.tab_model')}
+            </button>
+          </div>
           <div className="hpv-toolbar">
             <span className="cf-muted">{t('hp_view.scale', { half: half.toFixed(1) })}</span>
           </div>
 
           <svg
             className="hpv-diagram"
-            viewBox="0 0 1000 430"
+            viewBox="0 0 1000 450"
             role="img"
-            aria-label={t('hp_view.title')}
+            aria-label={morph < 0.5 ? t('hp_view.tab_pump') : t('hp_view.tab_model')}
           >
             <defs>
               {arrow('hpv-a-src', SOURCE)}
               {arrow('hpv-a-snk', SINK)}
               {arrow('hpv-a-fl', FLUID)}
+              {arrow('hpm-a', '#64748B')}
             </defs>
-            {[
-              [10, 330, t('hp_view.circuit1')],
-              [345, 310, t('hp_view.circuit2')],
-              [670, 320, t('hp_view.circuit3')],
-            ].map(([x, w, label]) => (
-              <g key={String(label)}>
-                <text
-                  x={Number(x) + Number(w) / 2}
-                  y={22}
-                  textAnchor="middle"
-                  className="hpv-circuit"
-                >
-                  {label}
+
+            {/* The heat pump, fading out as the slider moves to the model. Its
+                fields can be typed in only while it is the one shown. */}
+            {pumpOpacity > 0 && (
+              <g opacity={pumpOpacity} style={{ pointerEvents: morph < 0.5 ? 'auto' : 'none' }}>
+                {[
+                  [10, 330, t('hp_view.circuit1')],
+                  [345, 310, t('hp_view.circuit2')],
+                  [670, 320, t('hp_view.circuit3')],
+                ].map(([x, w, label]) => (
+                  <g key={String(label)}>
+                    <text
+                      x={Number(x) + Number(w) / 2}
+                      y={22}
+                      textAnchor="middle"
+                      className="hpv-circuit"
+                    >
+                      {label}
+                    </text>
+                    <rect
+                      x={Number(x)}
+                      y={36}
+                      width={Number(w)}
+                      height={384}
+                      className="hpv-frame"
+                    />
+                  </g>
+                ))}
+
+                {/* waste heat: in at the bottom, out at the top */}
+                <polyline
+                  points="30,330 235,330 235,262"
+                  className="hpv-pipe"
+                  stroke={SOURCE}
+                  markerEnd="url(#hpv-a-src)"
+                />
+                <polyline
+                  points="235,168 235,110 30,110"
+                  className="hpv-pipe"
+                  stroke={SOURCE}
+                  markerEnd="url(#hpv-a-src)"
+                />
+                {/* process heat */}
+                <polyline
+                  points="970,330 765,330 765,262"
+                  className="hpv-pipe"
+                  stroke={SINK}
+                  markerEnd="url(#hpv-a-snk)"
+                />
+                <polyline
+                  points="765,168 765,110 970,110"
+                  className="hpv-pipe"
+                  stroke={SINK}
+                  markerEnd="url(#hpv-a-snk)"
+                />
+                {/* refrigerant: evaporator → compressor → condenser → valve */}
+                <polyline points="290,168 290,75 474,75" className="hpv-pipe" stroke={FLUID} />
+                <polyline
+                  points="526,75 712,75 712,166"
+                  className="hpv-pipe"
+                  stroke={FLUID}
+                  markerEnd="url(#hpv-a-fl)"
+                />
+                <polyline points="712,262 712,370 520,370" className="hpv-pipe" stroke={FLUID} />
+                <polyline
+                  points="480,370 290,370 290,264"
+                  className="hpv-pipe"
+                  stroke={FLUID}
+                  markerEnd="url(#hpv-a-fl)"
+                />
+                <circle cx={500} cy={75} r={26} className="hpv-box" stroke={FLUID} />
+                <text x={500} y={81} textAnchor="middle" className="hpv-c" fill={FLUID}>
+                  C
                 </text>
-                <rect x={Number(x)} y={36} width={Number(w)} height={384} className="hpv-frame" />
+                <path
+                  d="M480,358 L500,370 L480,382 Z M520,358 L500,370 L520,382 Z"
+                  className="hpv-box"
+                  stroke={FLUID}
+                />
+                <text x={500} y={402} textAnchor="middle" className="hpv-small" fill={FLUID}>
+                  {t('hp_view.valve')}
+                </text>
+                <text x={538} y={104} className="hpv-label" fill={FLUID}>
+                  {t('hp_view.compressor')}
+                </text>
+                <text x={538} y={124} className="hpv-label" fill={FLUID}>
+                  P
+                  <tspan baselineShift="sub" fontSize="11">
+                    el
+                  </tspan>{' '}
+                  {kw(pEl)}
+                </text>
+
+                <rect
+                  x={180}
+                  y={168}
+                  width={150}
+                  height={94}
+                  className="hpv-box"
+                  stroke="#181C62"
+                />
+                <text x={255} y={207} textAnchor="middle" className="hpv-label">
+                  {t('hp_view.evaporator')}
+                </text>
+                <text x={255} y={230} textAnchor="middle" className="hpv-label" fill={SOURCE}>
+                  Q
+                  <tspan baselineShift="sub" fontSize="11">
+                    source
+                  </tspan>{' '}
+                  {kw(qSource)}
+                </text>
+                <rect
+                  x={670}
+                  y={168}
+                  width={150}
+                  height={94}
+                  className="hpv-box"
+                  stroke="#181C62"
+                />
+                <text x={745} y={207} textAnchor="middle" className="hpv-label">
+                  {t('hp_view.condenser')}
+                </text>
+                <text x={745} y={230} textAnchor="middle" className="hpv-label" fill={SINK}>
+                  Q
+                  <tspan baselineShift="sub" fontSize="11">
+                    sink
+                  </tspan>{' '}
+                  {kw(qSink)}
+                </text>
+
+                <text x={500} y={200} textAnchor="middle" className="hpv-cop">
+                  {cop ? `COP ${cop.toFixed(2)}` : 'COP –'}
+                </text>
+                <text x={500} y={226} textAnchor="middle" className="hpv-small">
+                  {t('hp_view.case_2t')}
+                </text>
+                {pump && (
+                  <text x={500} y={248} textAnchor="middle" className="hpv-small">
+                    {pump.refrigerant} · {pump.medium_sink}
+                  </text>
+                )}
+
+                {field('sourceOut', 30, 38, SOURCE)}
+                {field('sinkOut', 780, 38, SINK)}
               </g>
-            ))}
-
-            {/* waste heat: in at the bottom, out at the top */}
-            <polyline
-              points="30,330 235,330 235,262"
-              className="hpv-pipe"
-              stroke={SOURCE}
-              markerEnd="url(#hpv-a-src)"
-            />
-            <polyline
-              points="235,168 235,110 30,110"
-              className="hpv-pipe"
-              stroke={SOURCE}
-              markerEnd="url(#hpv-a-src)"
-            />
-            {/* process heat */}
-            <polyline
-              points="970,330 765,330 765,262"
-              className="hpv-pipe"
-              stroke={SINK}
-              markerEnd="url(#hpv-a-snk)"
-            />
-            <polyline
-              points="765,168 765,110 970,110"
-              className="hpv-pipe"
-              stroke={SINK}
-              markerEnd="url(#hpv-a-snk)"
-            />
-            {/* refrigerant: evaporator → compressor → condenser → valve */}
-            <polyline points="290,168 290,75 474,75" className="hpv-pipe" stroke={FLUID} />
-            <polyline
-              points="526,75 712,75 712,166"
-              className="hpv-pipe"
-              stroke={FLUID}
-              markerEnd="url(#hpv-a-fl)"
-            />
-            <polyline points="712,262 712,370 520,370" className="hpv-pipe" stroke={FLUID} />
-            <polyline
-              points="480,370 290,370 290,264"
-              className="hpv-pipe"
-              stroke={FLUID}
-              markerEnd="url(#hpv-a-fl)"
-            />
-            <circle cx={500} cy={75} r={26} className="hpv-box" stroke={FLUID} />
-            <text x={500} y={81} textAnchor="middle" className="hpv-c" fill={FLUID}>
-              C
-            </text>
-            <path
-              d="M480,358 L500,370 L480,382 Z M520,358 L500,370 L520,382 Z"
-              className="hpv-box"
-              stroke={FLUID}
-            />
-            <text x={500} y={402} textAnchor="middle" className="hpv-small" fill={FLUID}>
-              {t('hp_view.valve')}
-            </text>
-            <text x={538} y={104} className="hpv-label" fill={FLUID}>
-              {t('hp_view.compressor')}
-            </text>
-            <text x={538} y={124} className="hpv-label" fill={FLUID}>
-              P
-              <tspan baselineShift="sub" fontSize="11">
-                el
-              </tspan>{' '}
-              {kw(pEl)}
-            </text>
-
-            <rect x={180} y={168} width={150} height={94} className="hpv-box" stroke="#181C62" />
-            <text x={255} y={207} textAnchor="middle" className="hpv-label">
-              {t('hp_view.evaporator')}
-            </text>
-            <text x={255} y={230} textAnchor="middle" className="hpv-label" fill={SOURCE}>
-              Q
-              <tspan baselineShift="sub" fontSize="11">
-                source
-              </tspan>{' '}
-              {kw(qSource)}
-            </text>
-            <rect x={670} y={168} width={150} height={94} className="hpv-box" stroke="#181C62" />
-            <text x={745} y={207} textAnchor="middle" className="hpv-label">
-              {t('hp_view.condenser')}
-            </text>
-            <text x={745} y={230} textAnchor="middle" className="hpv-label" fill={SINK}>
-              Q
-              <tspan baselineShift="sub" fontSize="11">
-                sink
-              </tspan>{' '}
-              {kw(qSink)}
-            </text>
-
-            <text x={500} y={200} textAnchor="middle" className="hpv-cop">
-              {cop ? `COP ${cop.toFixed(2)}` : 'COP –'}
-            </text>
-            <text x={500} y={226} textAnchor="middle" className="hpv-small">
-              {t('hp_view.case_2t')}
-            </text>
-            {pump && (
-              <text x={500} y={248} textAnchor="middle" className="hpv-small">
-                {pump.refrigerant} · {pump.medium_sink}
-              </text>
             )}
 
-            {field('sourceOut', 30, 38, SOURCE)}
-            {field('sinkOut', 780, 38, SINK)}
+            {/* The model: a rectangle, its inputs' names and columns, the links. */}
+            {modelOpacity > 0 && (
+              <g opacity={modelOpacity}>
+                <text x={INPUT_X} y={16} textAnchor="middle" className="hpm-head">
+                  {t('hp_view.model.inputs')}
+                </text>
+                <text
+                  x={OUTPUT.x}
+                  y={OUTPUT.y - OUTPUT.r - 16}
+                  textAnchor="middle"
+                  className="hpm-head"
+                >
+                  {t('hp_view.model.output')}
+                </text>
+                {inputs.map((v, i) => (
+                  <g key={v.key}>
+                    <text
+                      x={INPUT_X - INPUT_R - 14}
+                      y={inputY(i) - 2}
+                      textAnchor="end"
+                      className="hpm-name"
+                    >
+                      {v.name}
+                    </text>
+                    <text
+                      x={INPUT_X - INPUT_R - 14}
+                      y={inputY(i) + 14}
+                      textAnchor="end"
+                      className="hpm-column"
+                    >
+                      {v.column}
+                    </text>
+                    <path
+                      d={`M${INPUT_X + INPUT_R} ${inputY(i)} C ${INPUT_X + 110} ${inputY(i)}, ${
+                        MODEL.x - 80
+                      } ${lerp(MODEL.y + 25, MODEL.y + MODEL.h - 25, i / (inputs.length - 1))}, ${
+                        MODEL.x - 4
+                      } ${lerp(MODEL.y + 25, MODEL.y + MODEL.h - 25, i / (inputs.length - 1))}`}
+                      className="hpv-pipe hpm-link"
+                      markerEnd="url(#hpm-a)"
+                    />
+                  </g>
+                ))}
+                <rect
+                  x={MODEL.x}
+                  y={MODEL.y}
+                  width={MODEL.w}
+                  height={MODEL.h}
+                  rx={12}
+                  className="hpm-model"
+                  stroke={FLUID}
+                />
+                <text
+                  x={MODEL.x + MODEL.w / 2}
+                  y={MODEL.y + MODEL.h / 2 - 6}
+                  textAnchor="middle"
+                  className="hpm-model-name"
+                  fill={FLUID}
+                >
+                  {t('hp_view.model.name')}
+                </text>
+                <text
+                  x={MODEL.x + MODEL.w / 2}
+                  y={MODEL.y + MODEL.h / 2 + 18}
+                  textAnchor="middle"
+                  className="hpv-small"
+                >
+                  {t('hp_view.model.kind_2t')}
+                </text>
+                <text
+                  x={MODEL.x + MODEL.w / 2}
+                  y={MODEL.y + MODEL.h + 22}
+                  textAnchor="middle"
+                  className="hpm-column"
+                >
+                  {t('hp_view.model.one_column_note')}
+                </text>
+                <path
+                  d={`M${MODEL.x + MODEL.w} ${OUTPUT.y} L ${OUTPUT.x - OUTPUT.r - 4} ${OUTPUT.y}`}
+                  className="hpv-pipe"
+                  stroke={FLUID}
+                  markerEnd="url(#hpv-a-fl)"
+                />
+                <text
+                  x={OUTPUT.x}
+                  y={OUTPUT.y + OUTPUT.r + 22}
+                  textAnchor="middle"
+                  className="hpv-small"
+                >
+                  {t('hp_view.model.cop_name')}
+                </text>
+                <text x={500} y={440} textAnchor="middle" className="hpm-meaning">
+                  {cop != null
+                    ? t('hp_view.model.cop_meaning', { cop: cop.toFixed(2) })
+                    : t('hp_view.model.cop_meaning_none')}
+                </text>
+              </g>
+            )}
+
+            {/* The variables on their way: each a circle that grows as it moves
+                from its place in the pump to its place at the model. */}
+            {morph > 0 && (
+              // Only a picture: the circles pass over the pump's fields and
+              // must not take their clicks.
+              <g opacity={smooth(0, 0.15, morph)} style={{ pointerEvents: 'none' }}>
+                {inputs.map((v, i) => (
+                  <g
+                    key={v.key}
+                    transform={`translate(${lerp(v.from[0], INPUT_X, travel)} ${lerp(
+                      v.from[1],
+                      inputY(i),
+                      travel
+                    )}) scale(${lerp(0.45, 1, travel)})`}
+                  >
+                    {bubble(v.color, INPUT_R, v.symbol, v.value)}
+                  </g>
+                ))}
+                <g
+                  transform={`translate(${lerp(500, OUTPUT.x, travel)} ${lerp(205, OUTPUT.y, travel)}) scale(${lerp(
+                    0.6,
+                    1,
+                    travel
+                  )})`}
+                >
+                  {bubble(FLUID, OUTPUT.r, 'COP', cop != null ? cop.toFixed(2) : '–', true)}
+                </g>
+              </g>
+            )}
           </svg>
 
           <div className="hpv-calc-row">

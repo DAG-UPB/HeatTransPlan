@@ -36,3 +36,35 @@ def test_guessed_codes_lock_the_live_endpoints():
     limiter = RateLimit(_app(404), rules=[], misses=(2, 600), enabled=True)
     assert [_call(limiter, "/api/live/pages/abcd1234") for _ in range(3)] == [404, 404, 429]
     assert _call(limiter, "/api/live/pages/abcd1234", ip="5.6.7.8") == 404
+
+
+def test_codes_the_mcp_server_tries_count_for_its_caller():
+    """The MCP server's lookups carry INTERNAL_TOKEN and the agent's address:
+    unknown codes count against that address, and its lock-out stops them
+    too. The address header counts for nothing without the token."""
+    from app.rate_limit import CALLER_HEADER
+
+    limiter = RateLimit(_app(404), rules=[("/api/", 1, 60)], misses=(2, 600), enabled=True)
+    internal = (b"x-heattransplan-internal", INTERNAL_TOKEN.encode())
+    agent = [internal, (CALLER_HEADER, b"9.9.9.9")]
+    # Internal calls do not use up the request limit (the /mcp request did) ...
+    assert [_call(limiter, "/api/live/pages/abcd1234", ip="127.0.0.1", headers=agent)
+            for _ in range(3)] == [404, 404, 429]
+    # ... and the agent's own address is locked out as well.
+    assert _call(limiter, "/api/live/pages/abcd1234", ip="9.9.9.9") == 429
+    # A forged address without the token is ignored: the real one counts.
+    assert _call(limiter, "/api/live/pages/abcd1234", ip="5.6.7.8",
+                 headers=[(CALLER_HEADER, b"1.1.1.1")]) == 404
+    assert _call(limiter, "/api/live/pages/abcd1234", ip="1.1.1.1") == 404
+    # Without a caller (a local MCP server's own calls) nothing counts, as before.
+    assert _call(limiter, "/api/live/pages/abcd1234", ip="127.0.0.1", headers=[internal]) == 404
+
+
+def test_an_ipv6_visitor_is_counted_by_their_64():
+    """Any address in one /64 is the same visitor; IPv4 stays as it is."""
+    from app.rate_limit import visitor
+    assert visitor("2001:db8:1:2::1") == visitor("2001:db8:1:2:ffff::9") == "2001:db8:1:2::/64"
+    assert visitor("2001:db8:1:3::1") != visitor("2001:db8:1:2::1")
+    assert visitor("203.0.113.7") == "203.0.113.7"
+    assert visitor("::ffff:203.0.113.7") == "203.0.113.7"
+    assert visitor("unknown") == "unknown"

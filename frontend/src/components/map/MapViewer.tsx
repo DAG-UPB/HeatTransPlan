@@ -10,6 +10,7 @@ import './leafletSafety';
 import 'leaflet/dist/leaflet.css';
 import type { ProcessNode } from '../../types/process';
 import type { SitePlan } from '../../types/project';
+import { isSafeImageUrl } from '../../utils/safeHtml';
 import './MapViewer.css';
 // Fix missing Leaflet default marker icons
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -33,7 +34,7 @@ import {
 import { PlanControls } from './SitePlanControls';
 import { StreamArrowsOverlay } from './StreamArrowsOverlay';
 import { StreamCirclesOverlay } from './StreamCirclesOverlay';
-import { TILE_URLS, createDivIcon } from './mapHelpers';
+import { TILE_URLS, boxesInSelection, createDivIcon } from './mapHelpers';
 import type { GroupCoords } from './types';
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -105,12 +106,15 @@ export default function MapViewer({
   selectionActive,
   className,
   allowMultiMove = false,
-  sitePlan,
+  sitePlan: givenPlan,
   onSitePlanChange,
   canvasPlans = {},
   onCanvasPlansChange,
 }: Props) {
   const { t } = useTranslation();
+  // A plan whose URL is not an image the browser made is not drawn, wherever
+  // it came from (a project file, an AI command, local storage).
+  const sitePlan = givenPlan && isSafeImageUrl(givenPlan.url) ? givenPlan : null;
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mapObj, setMapObj] = useState<L.Map | null>(null);
 
@@ -682,33 +686,15 @@ export default function MapViewer({
           locked={locked}
           onSelect={(inBox) => {
             lastSelectionTime.current = Date.now();
-            const idxsInBox: number[] = [];
-            const newSelected = new Set<string>();
-
-            // 1. Check groups
-            groups.forEach((subIdxs, gIdx) => {
-              const gc = groupCoordinates[gIdx];
-              if (gc && gc.lat && gc.lon) {
-                const lat = parseFloat(String(gc.lat));
-                const lon = parseFloat(String(gc.lon));
-                if (inBox([lat, lon])) {
-                  idxsInBox.push(...subIdxs);
-                  if (allowMultiMove) newSelected.add(`group-${gIdx}`);
-                }
-              }
-            });
-
-            // 2. Check independent processes (where they are drawn)
-            shown.forEach((p, pi) => {
-              if (p.lat && p.lon) {
-                const lat = parseFloat(String(p.lat));
-                const lon = parseFloat(String(p.lon));
-                if (inBox([lat, lon])) {
-                  idxsInBox.push(pi);
-                  if (allowMultiMove) newSelected.add(`sub-${pi}`);
-                }
-              }
-            });
+            const { idxs: idxsInBox, ids } = boxesInSelection(
+              inBox,
+              groups,
+              groupCoordinates,
+              shown,
+              subprocessMapExpanded,
+              isCanvasActive
+            );
+            const newSelected = new Set(allowMultiMove ? ids : []);
 
             if (allowMultiMove) setSelectedIds(newSelected);
 

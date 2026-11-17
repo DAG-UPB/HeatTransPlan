@@ -5,6 +5,7 @@
  * and the extra properties entered with the stream.
  */
 import type { Stream } from '../types/stream';
+import { escapeHtml } from './safeHtml';
 import { getStreamInfo } from './streamUtils';
 
 export interface StreamInfo {
@@ -48,13 +49,14 @@ const after = (s: string) => `${s}</tspan>`;
 const known = (v: number | null | undefined): v is number => v !== null && v !== undefined;
 
 /** A stream's values as SVG text for the map labels, with subscripts and units
- *  (the values are already in °C, kg/s and kJ/(kg·K)); empty where unknown. */
+ *  (the values are already in °C, kg/s and kJ/(kg·K)); empty where unknown.
+ *  The values are escaped: the labels go into the map as HTML. */
 export function streamSvgText(info: Pick<StreamInfo, 'tin' | 'tout' | 'mdot' | 'cp'>) {
   return {
-    tin: known(info.tin) ? `T${sub('in')}${after(`=${info.tin} °C`)}` : '',
-    tout: known(info.tout) ? `T${sub('out')}${after(`=${info.tout} °C`)}` : '',
-    mdot: known(info.mdot) ? `ṁ=${info.mdot} kg/s` : '',
-    cp: known(info.cp) ? `c${sub('p')}${after(`=${info.cp} kJ/(kg·K)`)}` : '',
+    tin: known(info.tin) ? `T${sub('in')}${after(`=${escapeHtml(info.tin)} °C`)}` : '',
+    tout: known(info.tout) ? `T${sub('out')}${after(`=${escapeHtml(info.tout)} °C`)}` : '',
+    mdot: known(info.mdot) ? `ṁ=${escapeHtml(info.mdot)} kg/s` : '',
+    cp: known(info.cp) ? `c${sub('p')}${after(`=${escapeHtml(info.cp)} kJ/(kg·K)`)}` : '',
   };
 }
 
