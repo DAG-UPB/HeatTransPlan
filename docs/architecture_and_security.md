@@ -93,7 +93,7 @@ sequenceDiagram
 ```{literalinclude} ../backend/app/services/live.py
 :language: python
 :start-at: def connected_session
-:end-before: def project_ids
+:end-before: def _publish
 ```
 </details>
 

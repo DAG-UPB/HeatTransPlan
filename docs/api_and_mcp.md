@@ -134,6 +134,8 @@ The analyses rerun by themselves after most changes; `wait_idle` returns the vie
 
 `mcp_server/` turns all of the above into tools an AI assistant can call. The backend serves it at **`/mcp`** (Streamable HTTP), so any agent that supports remote MCP servers, Claude among them, connects with the app's address alone: nothing to install.
 
+Everything an assistant receives when it connects (its instructions, the ways of working, its rules, the guided-study questions and every tool's description) is listed on [What the AI assistant gets](ai_briefing.md).
+
 ### Setup
 
 Add a remote MCP server of type HTTP ("streamable HTTP") with the address `<the app>/mcp`. Nothing to install, no command to run. The app's **?** next to Connect AI shows the address and these steps.

@@ -1070,6 +1070,7 @@
     "setup_where": "In den Einstellungen des Agenten für MCP-Server (bei manchen: Connectors oder Werkzeuge) einen Server vom Typ HTTP, auch „Streamable HTTP“, mit dieser Adresse hinzufügen. Kein Befehl, nichts zu installieren.",
     "setup_examples": "Beispiele: Claude, ChatGPT, Mistral, Gemini",
     "setup_docs": "Vollständige Anleitung in der Dokumentation: Einrichtung, alle Werkzeuge, Sicherheit",
+    "setup_briefing": "Was die KI bekommt: ihre Anweisungen, wie sie mit Ihnen arbeitet, die Schritte und jedes Werkzeug",
     "setup_ex_where": "Claude, ChatGPT und Le Chat verbinden sich über das Internet: Sie brauchen die App online unter einer https-Adresse. Claude Code und Gemini CLI laufen auf Ihrem Rechner und erreichen auch eine App, die hier läuft.",
     "setup_ex_claude": "Claude (Web, Desktop, Mobil): Einstellungen → Connectors → Benutzerdefinierten Connector hinzufügen, die Adresse einfügen, Hinzufügen. Dann im Chat über + → Connectors einschalten.",
     "setup_ex_chatgpt": "ChatGPT: Einstellungen → Apps (früher Connectors) → Erweiterte Einstellungen → Entwicklermodus einschalten → Erstellen; einen Namen und die Adresse eingeben. Nur in manchen Tarifen.",

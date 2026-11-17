@@ -5,6 +5,8 @@ import { MapContainer, TileLayer, ImageOverlay, Marker, Pane } from 'react-leafl
 import L from 'leaflet';
 // After leaflet: patches the global L so the map can rotate.
 import 'leaflet-rotate';
+// After both: a map asked where it is once it is gone answers instead of crashing.
+import './leafletSafety';
 import 'leaflet/dist/leaflet.css';
 import type { ProcessNode } from '../../types/process';
 import type { SitePlan } from '../../types/project';
@@ -508,6 +510,10 @@ export default function MapViewer({
             const showSubs = subprocessMapExpanded[gIdx];
 
             if (!showSubs) {
+              // An open diagram shows its own process alone: the other
+              // processes' boxes sit above the canvas and would show
+              // through on it.
+              if (isCanvasActive) return null;
               const lat = parseFloat(String(gCoords?.lat ?? ''));
               const lon = parseFloat(String(gCoords?.lon ?? ''));
               if (isNaN(lat) || isNaN(lon)) return null;

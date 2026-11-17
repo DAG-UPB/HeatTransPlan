@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.abspath("_ext"))
 
 extensions = [
     "symbol_tips",  # hover a formula symbol to see what it means
+    "ai_briefing",  # "What the AI assistant gets", filled from the MCP server's code
     "myst_parser",
     "sphinx_togglebutton",
     "sphinx_copybutton",

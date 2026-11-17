@@ -224,6 +224,11 @@ export default function LiveSetup({ onClose }: { onClose: () => void }) {
               {t('live.setup_docs')} ↗
             </a>
           </p>
+          <p>
+            <a href="/docs/ai_briefing.html" target="_blank" rel="noopener noreferrer">
+              {t('live.setup_briefing')} ↗
+            </a>
+          </p>
         </div>
       </div>
     </div>,

@@ -476,18 +476,23 @@ function EconomicAnalysisInputs({ defaults }: { defaults: EconDefaults }) {
     </span>
   );
 
-  const plot = ({ data, layout }: { data: any[]; layout: any }, onClick?: (e: any) => void) => (
-    <div className="pa-chart">
-      <Plot
-        data={data}
-        layout={layout}
-        config={{ responsive: true }}
-        // A chart with a fixed width sits centred; the others fill the card.
-        style={{ width: layout.width ?? '100%', margin: '0 auto' }}
-        onClick={onClick}
-      />
-    </div>
-  );
+  const plot = ({ data, layout }: { data: any[]; layout: any }, onClick?: (e: any) => void) => {
+    // A width in the layout is the most the chart takes: it sits centred at
+    // that width, and in a narrower card it shrinks to fit instead of
+    // reaching past the card's edge. The others fill the card.
+    const { width, ...fitted } = layout;
+    return (
+      <div className="pa-chart">
+        <Plot
+          data={data}
+          layout={fitted}
+          config={{ responsive: true }}
+          style={{ width: '100%', maxWidth: width, margin: '0 auto' }}
+          onClick={onClick}
+        />
+      </div>
+    );
+  };
 
   const barChart = plot(figures.bar);
   const priceChart = plot(figures.price);
