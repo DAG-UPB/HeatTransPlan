@@ -6,7 +6,6 @@ import HeatPumpView from './HeatPumpView';
 import { activePointsOf, boxPointsOf } from './optimizationChartPoints';
 import HPIOptimizationFilters from './HPIOptimizationFilters';
 import HPIOptimizationTable from './HPIOptimizationTable';
-import SearchSize from './SearchSize';
 import CopFormulaModal from './CopFormulaModal';
 import CopModelTrainModal from './CopModelTrainModal';
 import { useFeatures } from '../../hooks/useFeatures';
@@ -176,8 +175,6 @@ export default function HPIOptimizationPanel() {
 
   return (
     <div className={`analysis-panel ${isDark ? 'dark-mode' : ''}`} style={{ marginTop: '2rem' }}>
-      {/* How big the search was and how long it took. */}
-      <SearchSize />
       <div className="pa-split-layout">
         <div className="pa-left-col">
           <HPIOptimizationTable

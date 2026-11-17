@@ -59,13 +59,24 @@ const hpColors = (isDark: boolean) => ({
 
 /** Investment and cumulative cost, reference against the pump. */
 export function investmentChart(c: ChartCtx): Fig {
-  const { t, inp, ref, variants, results, points, isDark, istName } = c;
+  const { t, inp, ref, variants, results, points, isDark, istName, refName } = c;
   const { surface, layout } = chartTheme(isDark);
-  const names = [istName, ...points.map(pointName)];
+  // Short names under the bars, so they fit side by side without tilting into
+  // the legend: the heater ("Erdgaskessel") and "WP", numbered when several
+  // pumps are compared. The full names show on hover.
+  const hp = t('economics.charts.hp_short');
+  const names = [refName, ...points.map((_, k) => (points.length > 1 ? `${hp} ${k + 1}` : hp))];
+  const fullNames = [istName, ...points.map(pointName)];
+  const hovertemplate = '%{hovertext}<br>%{y:,.0f} €<extra>%{fullData.name}</extra>';
   // Replacement case: the reference has to buy its boiler (sized as the
   // largest pump compared, as in the net present value).
   const invRef = inp.boilerInvest * Math.max(0, ...variants.map((v) => v.Q));
   const totals = [ref.cumCost + invRef, ...variants.map((v, k) => v.capex + results[k].cumCost)];
+  const invest = [invRef, ...variants.map((v) => v.capex)];
+  // The investment's share of each bar's total, written on its segment.
+  const shares = invest.map((v, k) =>
+    v > 0 ? `${formatDe((100 * v) / Math.max(totals[k], 1), 0)} %` : ''
+  );
 
   const bar: Fig = {
     data: [
@@ -74,13 +85,21 @@ export function investmentChart(c: ChartCtx): Fig {
         name: t('economics.charts.cum_cost'),
         x: names,
         y: [ref.cumCost, ...results.map((r) => r.cumCost)],
+        hovertext: fullNames,
+        hovertemplate,
         marker: { color: isDark ? '#B0558C' : '#8E3B6E', line: { color: surface, width: 2 } },
       },
       {
         type: 'bar',
-        name: t('economics.charts.invest'),
+        name: t('economics.charts.invest_with_share'),
         x: names,
-        y: [invRef, ...variants.map((v) => v.capex)],
+        y: invest,
+        hovertext: fullNames,
+        hovertemplate,
+        text: shares,
+        textposition: 'inside',
+        insidetextanchor: 'middle',
+        textfont: { color: '#1A1C1E' },
         // Gold / plum: hues no other chart here uses (blue and orange are the
         // electricity and gas lines next to it) that stay apart for colour-blind
         // readers. The surface-coloured outline leaves a gap between the parts.
@@ -98,22 +117,10 @@ export function investmentChart(c: ChartCtx): Fig {
         showlegend: false,
         hoverinfo: 'skip',
       },
-      // Legend-only line: how much of the pump's total cost is the investment.
-      ...variants.map((v, k) => ({
-        type: 'scatter',
-        mode: 'lines',
-        x: [null],
-        y: [null],
-        line: { width: 0 },
-        name: t('economics.charts.invest_share', {
-          pct: formatDe((100 * v.capex) / Math.max(v.capex + results[k].cumCost, 1), 0),
-          T: inp.T,
-        }),
-        hoverinfo: 'skip',
-      })),
     ],
     layout: layout(t('economics.charts.bar_title', { T: inp.T }), {
       barmode: 'stack',
+      xaxis: { tickangle: 0 },
       // Headroom for the totals above the bars.
       yaxis: {
         title: { text: '€' },

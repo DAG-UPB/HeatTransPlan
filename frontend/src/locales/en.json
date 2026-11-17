@@ -745,7 +745,7 @@
       "size_reference": "Real heat pumps, best per size",
       "size_optimum": "Economic optimum",
       "size_analysed": "Selected HP",
-      "invest_share": "Investment = {{pct}} % of the total costs over {{T}} years",
+      "invest_with_share": "Investment (% of cost)",
       "not_paid_back": "Not yet paid back",
       "paid_back": "Paid back",
       "period_line": "End of period ({{T}} years)"
@@ -1032,6 +1032,36 @@
     "heat_sink": "Heat sink"
   },
   "live": {
+    "diagram": {
+      "label": "How the AI works with HeatTransPlan: the user in the browser, the AI assistant and the HeatTransPlan server",
+      "you": {
+        "title": "User",
+        "sub": "HeatTransPlan in the browser",
+        "p1": "clicks “Connect AI”",
+        "p2": "gives the AI the code",
+        "p3": "sees every step live"
+      },
+      "ai": {
+        "title": "AI assistant",
+        "sub": "Claude or another MCP client",
+        "p1": "reads the open page",
+        "p2": "changes it step by step",
+        "p3": "asks before deleting"
+      },
+      "app": {
+        "title": "HeatTransPlan",
+        "sub": "the server: computes, stores nothing",
+        "p1": "tools for the AI (MCP)",
+        "p2": "computes pinch and heat pumps",
+        "p3": "passes commands to the page"
+      },
+      "ask": "Request, code",
+      "answer": "Answer",
+      "tools": "Tools (MCP)",
+      "results": "Results",
+      "live": "Commands · live updates",
+      "note": "The project stays on the page in the browser. What the AI reads goes to the provider of the AI model."
+    },
     "connect": "Connect AI",
     "connect_hint": "Let an AI agent (through the HeatTransPlan MCP server) see and control this page. Your project stays in this page; nothing of it is stored on the server.",
     "code": "Session code for the AI",
