@@ -11,7 +11,12 @@ import type { LucideIcon } from 'lucide-react';
 import { useFeatures } from '../hooks/useFeatures';
 import LiveSetup from '../live/LiveSetup';
 import { CHAPTERS, PARTS, type PartNumber } from '../tour/guidedTour';
-import { hasOwnData, loadExampleProject, tourWithExample } from '../tour/tourWithExample';
+import {
+  TRY_EXAMPLE,
+  hasOwnData,
+  loadExampleProject,
+  tourWithExample,
+} from '../tour/tourWithExample';
 import styles from './HomePage.module.css';
 
 const PROJECT_URL = 'https://www.heattransplan.de/';
@@ -78,7 +83,7 @@ export default function HomePage() {
   const tryExample = async () => {
     if (hasOwnData() && !window.confirm(t('home_preview.example_replace'))) return;
     await withExample(async () => {
-      await loadExampleProject();
+      await loadExampleProject(TRY_EXAMPLE);
       navigate('/data-collection');
     });
   };

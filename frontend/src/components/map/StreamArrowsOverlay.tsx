@@ -48,7 +48,6 @@ export function StreamArrowsOverlay({
 
           const streams: StreamBubble[] = [];
           (p.streams || []).forEach((s: any, sidx: number) => {
-            if (s.type && s.type.toLowerCase() === 'product') return;
             const info = extractStreamInfo(s);
             streams.push({
               name: s.name || 'Stream',
@@ -77,7 +76,6 @@ export function StreamArrowsOverlay({
 
           const streams: StreamBubble[] = [];
           (child.streams || []).forEach((s: any, sidx: number) => {
-            if (s.type && s.type.toLowerCase() === 'product') return;
             const info = extractStreamInfo(s);
             streams.push({
               name: s.name || 'Stream',
@@ -143,7 +141,7 @@ export function StreamArrowsOverlay({
     <>
       {arrowGroups.map(({ lat, lon, streams }, idx) => {
         const N = streams.length;
-        const streamSpacing = 120; // Increased spacing to prevent overlap
+        const streamSpacing = 170; // Increased spacing to prevent overlap
         const svgW = Math.max(250, N * streamSpacing + 60);
         const svgH = 300; // Taller to allow 4 lines of text
 
@@ -158,8 +156,6 @@ export function StreamArrowsOverlay({
               : selectedStreams?.[`stream_${s.pIdx}_${s.si}`] !== false;
 
           const isHotStream = (s.tin || 0) > (s.tout || 0);
-          const inColor = streamColorForTemp(s.tin, isHotStream, isSelected);
-          const outColor = streamColorForTemp(s.tout, isHotStream, isSelected);
 
           const match = s.name.match(/\d+/);
           const num = match ? match[0] : s.si + 1;
@@ -184,29 +180,42 @@ export function StreamArrowsOverlay({
               .join('');
             return `<text text-anchor="middle" ${textStyle}>${spans}</text>`;
           };
-          const feed = [escapeHtml(`${streamTypeStr} ${num}`), text.tin, text.mdot, text.cp].filter(
-            Boolean
-          );
-          const product = [text.tout].filter(Boolean);
+          const q = s.Q != null ? `Q̇=${escapeHtml(Math.round(s.Q))} kW` : '';
+          // The stream's own name, so map and stream list match; the kind
+          // below it unless the name already says it.
+          const named = s.name.toLowerCase().startsWith(streamTypeStr.toLowerCase());
+          const title = s.name && s.name !== 'Stream' ? s.name : `${streamTypeStr} ${num}`;
+          const lines = [
+            escapeHtml(title),
+            named ? '' : escapeHtml(streamTypeStr),
+            text.tin,
+            text.tout,
+            text.mdot,
+            text.cp,
+            q,
+          ].filter(Boolean);
           const arrow = (y1: number, y2: number, color: string) => {
             const dir = y2 > y1 ? 1 : -1;
             return `<line x1="${cx}" y1="${y1}" x2="${cx}" y2="${y2 - dir * 8}" stroke="${color}" stroke-width="${strokeWidth}" opacity="${opacity}" />
               <polygon points="${cx - 5},${y2 - dir * 10} ${cx + 5},${y2 - dir * 10} ${cx},${y2}" fill="${color}" opacity="${opacity}" />`;
           };
 
-          // Hot streams run upwards through the box, cold ones downwards.
-          const inArrow = isHotStream
-            ? arrow(245, 180, inColor.stroke) + label(feed, 245, true)
-            : arrow(55, 120, inColor.stroke) + label(feed, 55, false);
-          const outArrow = isHotStream
-            ? arrow(120, 55, outColor.stroke) + label(product, 55, false)
-            : arrow(180, 245, outColor.stroke) + label(product, 245, true);
+          // The arrow shows where the heat goes: a heat sink needs heat, so its
+          // arrow points into the box (from above); a heat source gives heat off,
+          // so its arrow points away from the box (downwards).
+          const hotEnd = streamColorForTemp(
+            s.tin != null && s.tout != null ? Math.max(s.tin, s.tout) : null,
+            isHotStream,
+            isSelected
+          );
+          const heatArrow = isHotStream
+            ? arrow(180, 245, hotEnd.stroke) + label(lines, 245, true)
+            : arrow(55, 120, hotEnd.stroke) + label(lines, 55, false);
 
           arrowParts.push(
             `<g class="stream-arrow" data-pidx="${s.pIdx}" ${s.ci !== undefined ? `data-cidx="${s.ci}"` : ''} data-si="${s.si}" style="cursor:pointer; transition:all 0.2s">
                <title>${escapeHtml(s.name)}: ${escapeHtml(s.tin ?? '–')} → ${escapeHtml(s.tout ?? '–')} °C</title>
-               ${inArrow}
-               ${outArrow}
+               ${heatArrow}
              </g>`
           );
         });

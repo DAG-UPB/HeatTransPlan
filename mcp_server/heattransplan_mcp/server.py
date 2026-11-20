@@ -27,7 +27,7 @@ from heattransplan_mcp.texts import GUIDE, INSTRUCTIONS, MODES, RULES, TOPICS
 from heattransplan_mcp.api import Api, ApiError
 
 
-mcp = MCPServer(name="heattransplan", instructions=INSTRUCTIONS, version="3.1.0")
+mcp = MCPServer(name="heattransplan", instructions=INSTRUCTIONS, version="3.2.0")
 api = Api()
 
 # Page commands that only read: what they return is the user's data.

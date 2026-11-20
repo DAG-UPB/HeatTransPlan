@@ -409,7 +409,13 @@ export default function HPIOptimizationTable({
                         trained machine; an archetype has none of them. */}
                     <td>{pt.theoretical ? '' : refName}</td>
                     <td>{pt.theoretical ? '' : pt.hp_level}</td>
-                    <td>{pt.theoretical ? '' : pt.refrigerant_type}</td>
+                    <td>
+                      {pt.theoretical
+                        ? ''
+                        : t(`optimization.refrigerant_types.${pt.refrigerant_type}`, {
+                            defaultValue: pt.refrigerant_type,
+                          })}
+                    </td>
                     <td style={{ fontWeight: 600 }}>{pt.COP.toFixed(2)}</td>
                     <td>{(pt.Q_demand / pt.COP).toFixed(1)}</td>
                     <td style={divider}>{pt.theoretical ? '' : pt.medium_sink}</td>

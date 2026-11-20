@@ -1,6 +1,6 @@
-# Step 4 — Cost Analysis
+# Step 4 — Economic Assessment
 
-Step 3 says what a heat pump *can* deliver. **Step 4, the cost analysis**, asks whether it is worth buying. It compares the heat pump with the system it replaces year by year and turns the difference into a **net present value**, a **dynamic payback**, the **heat cost (LCOH)**, the **CO₂ saving** and a **break-even electricity price**.
+Step 3 says what a heat pump *can* deliver. **Step 4, the economic assessment**, asks whether it is worth buying. It compares the heat pump with the system it replaces year by year and turns the difference into a **net present value**, a **dynamic payback**, the **heat cost (LCOH)**, the **CO₂ saving** and a **break-even electricity price**.
 
 The method is the **net present value method** (*Kapitalwertmethode*) with price-dynamic cash flows, as in VDI 2067 Blatt 1:2012. Its annuity method, which VDI 4646:2026 builds on, gives the same decision (annuity = NPV × annuity factor). Every input, formula and deviation below names the page of the guideline it comes from. The implementation reproduces the worked examples of both guidelines (see *4.9 Validation*).
 
@@ -348,7 +348,7 @@ A plain-language **summary** closes the section: coverage, energy and CO₂ save
 ### Scenario comparison and report
 
 - **Scenario comparison**: each saved scenario gets its investment, NPV, dynamic payback and cost saving in year 1, plus a bar chart of NPV per scenario. All scenarios use the same inputs.
-- **Report**: every scenario page ends with the full cost analysis — key results, all inputs, both result tables, the charts and the summary. The comparison page carries the same economic columns and the NPV-per-scenario chart.
+- **Report**: every scenario page ends with the full economic assessment — key results, all inputs, both result tables, the charts and the summary. The comparison page carries the same economic columns and the NPV-per-scenario chart.
 
 <details>
 <summary><b>Source code:</b> <code>frontend/src/components/analysis/econModel.ts</code> (<code>econReportData</code>)</summary>
@@ -374,4 +374,4 @@ A plain-language **summary** closes the section: coverage, energy and CO₂ save
 The text of [4646:2026] §8.2 states "just under 12 years" and an IRR of 6 % for the static-payback example. These are read off the nomogram (Bild 22); its own equations (C5)/(C6) give 13,65 years and 3,95 % for the stated inputs, as does the app. These checks run as unit tests in `backend/tests/test_economics.py`.
 
 > [!NOTE]
-> The cost analysis assumes constant duty and COP over the year, prices that change at fixed rates, and an investment from a specific cost per kW.
+> The economic assessment assumes constant duty and COP over the year, prices that change at fixed rates, and an investment from a specific cost per kW.
