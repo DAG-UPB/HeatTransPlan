@@ -16,6 +16,8 @@ def _activity_log(tmp_path, monkeypatch):
     """Each test logs to its own file, never the machine's."""
     from app.services import activity_log
     monkeypatch.setattr(activity_log, "PATH", str(tmp_path / "activity.sqlite"))
+    from app.services import usage
+    monkeypatch.setattr(usage, "PATH", str(tmp_path / "usage.sqlite"))
 
 
 @pytest.fixture

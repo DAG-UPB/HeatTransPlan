@@ -4,6 +4,7 @@
  *  (PARTS in tour/guidedTour.ts). */
 
 import { useState } from 'react';
+import { track } from '../api/usage';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BookOpen, Bot, CirclePlay, FileText, FolderOpen } from 'lucide-react';
@@ -78,10 +79,14 @@ export default function HomePage() {
     }
   };
 
-  const tour = (from: number) => withExample(() => tourWithExample(navigate, t, from));
+  const tour = (from: number) => {
+    track('ui:tour');
+    return withExample(() => tourWithExample(navigate, t, from));
+  };
 
   const tryExample = async () => {
     if (hasOwnData() && !window.confirm(t('home_preview.example_replace'))) return;
+    track('ui:try_example');
     await withExample(async () => {
       await loadExampleProject(TRY_EXAMPLE);
       navigate('/data-collection');

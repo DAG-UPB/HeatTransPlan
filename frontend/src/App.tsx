@@ -1,10 +1,11 @@
 import { Suspense, lazy, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import AppShell from './components/layout/AppShell';
 // The landing page, loaded at once: the method in four steps and the guided tour.
 import HomePage from './pages/HomePage';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import { loadEconDefaults } from './api/analysis';
+import { trackPage } from './api/usage';
 
 // Plotly and Leaflet are ~90% of the bundle. Loading them eagerly meant a
 // phone downloaded several megabytes before it could show the landing page;
@@ -18,6 +19,9 @@ function App() {
   useEffect(() => {
     loadEconDefaults().catch(() => undefined);
   }, []);
+  // Which page is open, counted anonymously (api/usage.ts).
+  const { pathname } = useLocation();
+  useEffect(() => trackPage(pathname), [pathname]);
   return (
     <ErrorBoundary>
       <AppShell>

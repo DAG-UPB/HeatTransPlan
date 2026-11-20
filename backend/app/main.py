@@ -8,10 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import AI_ENABLED, CORS_ORIGINS
 from app.routers import processes, analysis, io_routes, assets, live
-from app.services import activity_log, cop_training
+from app.services import activity_log, cop_training, usage
 from app import api_keys
 from app.rate_limit import RateLimit
 from fastapi.security import APIKeyHeader
+from pydantic import BaseModel, Field
 
 # The MCP server online, when AI access is on and its package is installed
 # (see app/mcp_http.py).
@@ -38,7 +39,7 @@ app = FastAPI(
 # commands and their answers, and its activity notes (live.record writes one
 # row per tool instead), /mcp (each tool's calls to the API are logged as
 # the AI's), and getting an API key: issuing one leaves no trace at all.
-_QUIET = re.compile(r"^/api/live/(sessions/[^/]+/(view|commands(/.*)?)|pages/[^/]+/log)$|^/mcp|^/api/keys(/page)?$")
+_QUIET = re.compile(r"^/api/live/(sessions/[^/]+/(view|commands(/.*)?)|pages/[^/]+/log)$|^/mcp|^/api/keys(/page)?$|^/api/usage/")
 
 
 @app.middleware("http")
@@ -62,6 +63,12 @@ async def activity(request: Request, call_next):
         await run_in_threadpool(activity_log.write, "system", action(),
                                 f"{actor}'s request failed: {activity_log.where_it_failed(exc)}", 500)
         raise
+    # How far visitors get (app/services/usage.py): the page's own requests only.
+    if actor == "human" and response.status_code < 400 and request.method == "POST":
+        name = action()
+        if name in usage.API_EVENTS:
+            await run_in_threadpool(usage.record, request.client.host if request.client else None,
+                                    request.headers.get("user-agent"), name)
     if log or response.status_code >= 500:
         await run_in_threadpool(
             activity_log.write, actor if response.status_code < 500 else "system", action(),
@@ -133,6 +140,26 @@ if mcp_http:
     # Keys checked by ApiKeyCheck (header or ?key=); before the page's catch-all below.
     app.add_route("/mcp", mcp_http.endpoint, methods=["GET", "POST", "DELETE"])
     app.include_router(mcp_http.router, prefix="/api/mcp", tags=["MCP"])
+
+
+class UsageEvent(BaseModel):
+    name: str = Field(max_length=60)
+
+
+@app.post("/api/usage/event", status_code=204, tags=["Usage"])
+async def usage_event(event: UsageEvent, request: Request):
+    """The page says which page it shows or what was clicked (a fixed list of
+    names, app/services/usage.py); anything else is dropped."""
+    await run_in_threadpool(usage.record, request.client.host if request.client else None,
+                            request.headers.get("user-agent"), event.name)
+
+
+@app.get("/api/usage/me", tags=["Usage"])
+async def usage_me(request: Request):
+    """The address the server sees for you and whether it counts as the owner
+    (OWNER_IPS). Shown only to yourself, never stored."""
+    address = request.client.host if request.client else None
+    return {"address": address, "owner": bool(address) and usage.is_owner(address)}
 
 
 @app.get("/api/health")

@@ -14,6 +14,8 @@ services:
       API_KEY_SECRET: ${API_KEY_SECRET:-}
       API_KEY_BLOCKLIST: ${API_KEY_BLOCKLIST:-}
       API_KEYS: ${API_KEYS:-}
+      # Your own addresses, counted apart in the usage report (app/services/usage.py).
+      OWNER_IPS: ${OWNER_IPS:-}
     # Hardened: read-only except /tmp, no special rights, no way to gain any.
     read_only: true
     # /tmp lives in memory: uploads over 1 MB wait there while a request reads
@@ -40,6 +42,7 @@ services:
       # stays off the server entirely.
       - ./models:/app/models:ro
       # Who changed what (app/services/activity_log.py); trims itself at 20 MB.
+      # Also the anonymous usage counts (app/services/usage.py), kept 90 days.
       - activity_log:/app/logs
 
   frontend:

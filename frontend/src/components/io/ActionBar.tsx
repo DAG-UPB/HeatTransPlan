@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { track } from '../../api/usage';
 import { useTranslation } from 'react-i18next';
 import {
   FileSpreadsheet,
@@ -71,6 +72,7 @@ export default function ActionBar({
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
+    track('ui:project_save');
     const blob = new Blob([JSON.stringify(state, null, 2)], {
       type: 'application/json',
     });
@@ -83,6 +85,7 @@ export default function ActionBar({
   };
 
   const handleLoad = (e: React.ChangeEvent<HTMLInputElement>) => {
+    track('ui:project_open');
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
