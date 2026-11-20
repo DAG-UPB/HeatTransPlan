@@ -258,7 +258,7 @@
       "pct": "Anteil der möglichen Wärmerückgewinnung"
     },
     "parts": {
-      "integration": "Prozessströme & Wärmeintegration",
+      "integration": "Prozessströme & Pinch-Analyse",
       "heat_pump": "Wärmepumpenintegration",
       "costs": "Wirtschaftlichkeitsbetrachtung",
       "costs_sub": "im Vergleich zu alternativen Wärmeerzeugungs-Utilities",

@@ -93,7 +93,7 @@ I18N = {
         # The app's numbered steps, as their banners name them.
         "part_1": "Data collection",
         "part_1_in": "Input: your site, its processes and streams",
-        "part_2": "Streams & heat integration",
+        "part_2": "Process streams & pinch analysis",
         "part_2_in": "Input: streams of the selected processes",
         "part_3": "Heat pump integration",
         "part_3_in": "Input: Grand Composite Curve",
@@ -203,7 +203,7 @@ I18N = {
         "econ_npv_title": "Kapitalwert je Szenario",
         "part_1": "Datenerfassung",
         "part_1_in": "Eingang: Ihr Standort, seine Prozesse und Ströme",
-        "part_2": "Ströme & Wärmeintegration",
+        "part_2": "Prozessströme & Pinch-Analyse",
         "part_2_in": "Eingang: Ströme der ausgewählten Prozesse",
         "part_3": "Wärmepumpenintegration",
         "part_3_in": "Eingang: Großverbundkurve",

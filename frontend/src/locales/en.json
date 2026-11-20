@@ -258,7 +258,7 @@
       "pct": "Share of the possible heat recovery"
     },
     "parts": {
-      "integration": "Streams & heat integration",
+      "integration": "Process streams & pinch analysis",
       "heat_pump": "Heat pump integration",
       "costs": "Economic assessment",
       "costs_sub": "compared with alternative heat generation utilities",
