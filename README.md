@@ -181,4 +181,6 @@ change).
 
 ## License
 
-See [LICENSE](LICENSE) for details.
+HeatTransPlan is free software under the GNU General Public License v3.0 (GPL-3.0-only): you may use, change and pass it on, and whatever you pass on must stay under the GPL-3.0 with its source code. See [LICENSE](LICENSE) for the full text.
+
+Versions up to and including 3.2 were released under the Apache License 2.0.

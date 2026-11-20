@@ -19,13 +19,13 @@ test('example → analysis → report', async ({ page }) => {
   await expect(page.getByText('Pinch Temperature').first()).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('button', { name: 'Select All' })).toBeVisible({ timeout: 60_000 });
 
-  // The heat pump view: Example 1's default pump at the two temperatures the
-  // 2-temperature model reads.
+  // The heat pump view: the example's default pump ("Try the example" opens
+  // example 7) at the two temperatures the 2-temperature model reads.
   await page.getByRole('button', { name: 'COP model', exact: true }).click();
   const view = page.getByRole('dialog', { name: 'COP model', exact: true });
-  await expect(view.getByLabel('Source outlet temperature')).toHaveValue('58.6');
+  await expect(view.getByLabel('Source outlet temperature')).toHaveValue('50.9');
   await expect(view.getByLabel('Sink outlet temperature')).toHaveValue('113.0');
-  await expect(view.getByText('COP 4.34')).toBeVisible({ timeout: 15_000 });
+  await expect(view.getByText('COP 3.80')).toBeVisible({ timeout: 15_000 });
   // Only the 2-temperature model: no inlet fields.
   await expect(view.getByLabel('Source inlet temperature')).toHaveCount(0);
   // The slider goes from the pump to the model (no tabs): at the model end the
@@ -37,11 +37,11 @@ test('example → analysis → report', async ({ page }) => {
   await expect(view.getByLabel('Source outlet temperature')).toHaveCount(0);
   await view.getByRole('button', { name: 'Heat pump', exact: true }).click();
   await expect(morph).toHaveValue('0');
-  await expect(view.getByLabel('Source outlet temperature')).toHaveValue('58.6');
+  await expect(view.getByLabel('Source outlet temperature')).toHaveValue('50.9');
   // The optimization's balance: on both profiles at the pump's own point,
-  // short of waste heat once the source may only cool to 66 °C.
+  // short of waste heat once the source may only cool to 56 °C.
   await expect(view.getByText(/Needed and available waste heat match/)).toBeVisible();
-  await view.getByLabel('Source outlet temperature').fill('66');
+  await view.getByLabel('Source outlet temperature').fill('56');
   await expect(view.getByText(/kW of waste heat short: source-limited/)).toBeVisible({
     timeout: 15_000,
   });

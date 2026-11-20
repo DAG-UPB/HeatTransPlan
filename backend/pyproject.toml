@@ -2,6 +2,7 @@
 name = "heattransplan-backend"
 version = "1.0.0"
 description = "HeatTransPlan FastAPI Backend"
+license = {text = "GPL-3.0-only"}
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
