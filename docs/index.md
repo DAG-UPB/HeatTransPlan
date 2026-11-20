@@ -26,7 +26,7 @@ The app works in four numbered steps, and this documentation follows them:
 | **1 Data collection** | Plant areas are placed on a map, their machines or steps added, and the streams entered: what is cooled (waste heat) and what is heated (demand). | temperatures in and out, mass flow and heat capacity (or the duty), operating hours |
 | **2 Streams & heat integration** | Pinch analysis: composite curves, grand composite curve, pinch temperature and the minimum heating and cooling demand. | which streams are included, today's demand, ΔTmin |
 | **3 Heat pump integration** | Heat pumps are matched to the grand composite curve: COP, duty and electrical input of every feasible operating point. | the heat pump, from the points on the chart |
-| **4 Cost analysis** | The chosen heat pump against the heater and cooling it replaces: investment, payback, net present value, cost of heat, CO₂ saving, sensitivity to energy prices. | today's heater, energy prices, operating hours |
+| **4 Economic assessment** | The chosen heat pump against the heater and cooling it replaces: investment, payback, net present value, cost of heat, CO₂ saving, sensitivity to energy prices. | today's heater, energy prices, operating hours |
 
 Saved scenarios are compared side by side, economics included, and everything can be exported as a report.
 

@@ -10,12 +10,14 @@ import { loadProject } from '../store/loadProject';
 import { startTour } from './guidedTour';
 
 export const EXAMPLE = 'heat_integration_example_1.json';
+/** The example "Try the example" opens (20.11.2026); the tour keeps EXAMPLE. */
+export const TRY_EXAMPLE = 'heat_integration_example_7.json';
 
 export const hasOwnData = () => (useProjectStore.getState().state.processes?.length ?? 0) > 0;
 
 /** Loads the example project; throws if it cannot be fetched. */
-export async function loadExampleProject() {
-  loadProject(await getExample(EXAMPLE));
+export async function loadExampleProject(name = EXAMPLE) {
+  loadProject(await getExample(name));
 }
 
 /** Throws if the example cannot be loaded; the tour then does not start. */

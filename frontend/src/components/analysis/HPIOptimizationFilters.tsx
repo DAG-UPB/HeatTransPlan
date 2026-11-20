@@ -255,7 +255,8 @@ export default function HPIOptimizationFilters(p: Props) {
     label: string,
     value: string,
     onChange: (v: string) => void,
-    values: string[]
+    values: string[],
+    name: (v: string) => string = (v) => v
   ) => (
     <div>
       <label style={labelStyle}>{label}</label>
@@ -267,7 +268,7 @@ export default function HPIOptimizationFilters(p: Props) {
         <option value="All">{t('optimization.panel.filters.all')}</option>
         {values.map((m) => (
           <option key={m} value={m}>
-            {m}
+            {name(m)}
           </option>
         ))}
       </select>
@@ -314,7 +315,8 @@ export default function HPIOptimizationFilters(p: Props) {
         t('optimization.panel.filters.refrigerant_type'),
         p.refrigerantType,
         p.onRefrigerantType,
-        p.options.refrigerantTypes
+        p.options.refrigerantTypes,
+        (m) => t(`optimization.refrigerant_types.${m}`, { defaultValue: m })
       )}
       <MultiSelect
         label={t('optimization.panel.filters.refrigerant')}

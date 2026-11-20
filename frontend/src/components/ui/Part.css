@@ -80,3 +80,10 @@
 .pa-part-banner.pa-part-banner-static::before {
   display: none;
 }
+
+/* A short line in small type right after a step's title. */
+.pa-part-sub {
+  font-size: 0.8rem;
+  font-weight: 400;
+  opacity: 0.85;
+}

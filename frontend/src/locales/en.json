@@ -260,7 +260,8 @@
     "parts": {
       "integration": "Streams & heat integration",
       "heat_pump": "Heat pump integration",
-      "costs": "Cost analysis",
+      "costs": "Economic assessment",
+      "costs_sub": "compared with alternative heat generation utilities",
       "integration_in": "Input: streams of the selected processes",
       "heat_pump_in": "Input: Grand Composite Curve",
       "costs_in": "Input: selected heat pump (heat output, COP)"
@@ -395,6 +396,10 @@
     "title_model_information": "Model Information",
     "desc_model_information": "The heat pump model provided by Copeland is based on physical simulations and gives orientation values. The results do not replace a project-specific design; for detailed calculations, the manufacturer's data have to be used.",
     "title_refrigerant_type": "Refrigerant type",
+    "refrigerant_types": {
+      "Natural": "Natural",
+      "Synthetic": "Synthetic"
+    },
     "title_medium_sink": "Sink medium",
     "desc_medium_sink": "Medium on the sink side: water or steam.",
     "title_cop": "COP",
@@ -455,7 +460,7 @@
     "desc_opt_chart_red_3": " shows the available heat flow of the sources at each temperature level.",
     "desc_opt_chart_aims_1": "A complete solution covers the whole sink demand up to its supply temperature, so its sink point (blue) sits exactly ",
     "desc_opt_chart_aims_2": "on the solid blue line",
-    "desc_opt_chart_aims_3": ". In a real design a heat pump is usually sized for a steady base load rather than the peak; the economic size is shown in the cost analysis.",
+    "desc_opt_chart_aims_3": ". In a real design a heat pump is usually sized for a steady base load rather than the peak; the economic size is shown in the economic assesssis.",
     "desc_opt_chart_why": "Why are some points off the blue line?",
     "desc_opt_chart_off_1": "Points to the left of the blue line are ",
     "desc_opt_chart_off_2": "source-limited",

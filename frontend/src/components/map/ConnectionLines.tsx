@@ -2,15 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { ProcessNode } from '../../types/process';
-import i18n from '../../i18n';
-import { extractStreamInfo, streamSvgText, svgTextWidth } from '../../utils/streamInfo';
 import type { GroupCoords } from './types';
-import { boxHalf, labelSpot, routeConnection } from './connectionRoute';
+import { boxHalf, routeConnection } from './connectionRoute';
 
 const LINE = '#64748b';
-// Product tag: line height (room for subscripts) and inner padding.
-const LH = 15;
-const PAD = 8;
 
 type Pt = { x: number; y: number };
 
@@ -21,7 +16,6 @@ export function ConnectionLines({
   groupCoordinates,
   subprocessMapExpanded,
   childMapExpanded,
-  onElementDoubleClick,
 }: {
   processes: ProcessNode[];
   groups: number[][];
@@ -60,35 +54,7 @@ export function ConnectionLines({
     />
   );
 
-  // The tag with a source's product streams, as SVG lines.
-  const productTag = (p: ProcessNode) => {
-    const products = (p.streams || []).filter((s: any) => s.type?.toLowerCase() === 'product');
-    if (products.length === 0) return null;
-    const lines: { svg: string; color: string; bold: boolean }[] = [];
-    products.forEach((s: any, i) => {
-      const info = extractStreamInfo(s);
-      const color = (info.tin || 0) > (info.tout || 0) ? '#c0392b' : '#2471a3';
-      const num = products.length > 1 ? ` ${i + 1}` : '';
-      const text = streamSvgText(info);
-      lines.push({ svg: `${i18n.t('map.product')}${num}`, color, bold: true });
-      const temps = [text.tin, text.tout].filter(Boolean).join(', ');
-      const flow = [text.mdot, text.cp].filter(Boolean).join(', ');
-      if (temps) lines.push({ svg: temps, color, bold: false });
-      if (flow) lines.push({ svg: flow, color, bold: false });
-    });
-    const w = Math.ceil(Math.max(...lines.map((l) => svgTextWidth(l.svg))) + PAD * 2);
-    const h = lines.length * LH + PAD;
-    const body = lines
-      .map(
-        (l, i) =>
-          `<text x="${w / 2}" y="${PAD / 2 + 11 + i * LH}" text-anchor="middle" font-size="11" ${l.bold ? 'font-weight="700"' : ''} fill="${l.color}">${l.svg}</text>`
-      )
-      .join('');
-    const sidxs = products.map((s) => p.streams!.indexOf(s)).join(',');
-    return { w, h, body, sidxs };
-  };
-
-  const drawConn = (p: ProcessNode, tgt: ProcessNode, pIdx: number) => {
+  const drawConn = (p: ProcessNode, tgt: ProcessNode) => {
     const srcLat = parseFloat(String(p.lat));
     const srcLon = parseFloat(String(p.lon));
     const tLat = parseFloat(String(tgt.lat));
@@ -135,32 +101,7 @@ export function ConnectionLines({
         `<polygon points="${pts(head)}" fill="${LINE}" /></svg>`
     );
 
-    const tag = productTag(p);
-    if (!tag) return line;
-    const at = labelSpot(route, p1, p2, src, dst, tag.w, tag.h);
-    const onClick = (e: any) => {
-      const g = (e.originalEvent.target as HTMLElement).closest('g.stream-arrow');
-      const first = Number((g?.getAttribute('data-sidxs') || '').split(',')[0]);
-      if (g && onElementDoubleClick && pIdx !== -1 && !isNaN(first)) {
-        onElementDoubleClick('stream', pIdx, first);
-      }
-    };
-    return (
-      <React.Fragment key={key}>
-        {line}
-        {pinned(
-          `${key}-tag`,
-          at,
-          tag.w,
-          tag.h,
-          `<svg width="${tag.w}" height="${tag.h}" style="display:block;overflow:visible">` +
-            `<g class="stream-arrow" data-sidxs="${tag.sidxs}" style="cursor:pointer">` +
-            `<rect x="0.5" y="0.5" width="${tag.w - 1}" height="${tag.h - 1}" rx="6" style="fill:var(--surface,#fff);stroke:var(--border,#e2e8f0)" />` +
-            `${tag.body}</g></svg>`,
-          onClick
-        )}
-      </React.Fragment>
-    );
+    return line;
   };
 
   const connections: React.ReactElement[] = [];
@@ -192,7 +133,7 @@ export function ConnectionLines({
               lon: c.lon,
               box_scale: c.box_scale || 1.5,
             }) as ProcessNode;
-          const el = drawConn(node(gIdx, a), node(tg, b), -1);
+          const el = drawConn(node(gIdx, a), node(tg, b));
           if (el) connections.push(el);
         });
       });
@@ -206,7 +147,7 @@ export function ConnectionLines({
       targetsOf(processes[si]).forEach((tName) => {
         const ti = visible.find((idx) => processes[idx].name === tName);
         if (ti === undefined) return;
-        const el = drawConn(processes[si], processes[ti], si);
+        const el = drawConn(processes[si], processes[ti]);
         if (el) connections.push(el);
       });
     });
@@ -220,7 +161,7 @@ export function ConnectionLines({
       children.forEach((c) => {
         targetsOf(c).forEach((tName) => {
           const tgt = children.find((pp) => pp.name === tName);
-          const el = tgt && drawConn(c, tgt, -1);
+          const el = tgt && drawConn(c, tgt);
           if (el) connections.push(el);
         });
       });

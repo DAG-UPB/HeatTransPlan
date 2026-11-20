@@ -260,7 +260,8 @@
     "parts": {
       "integration": "Prozessströme & Wärmeintegration",
       "heat_pump": "Wärmepumpenintegration",
-      "costs": "Kostenanalyse",
+      "costs": "Wirtschaftlichkeitsbetrachtung",
+      "costs_sub": "im Vergleich zu alternativen Wärmeerzeugungs-Utilities",
       "integration_in": "Eingang: Prozessströme der ausgewählten Prozesse",
       "heat_pump_in": "Eingang: Großverbundkurve",
       "costs_in": "Eingang: ausgewählte Wärmepumpe (Heizleistung, COP)"
@@ -395,6 +396,10 @@
     "title_model_information": "Modellinformationen",
     "desc_model_information": "Das von Copeland bereitgestellte Wärmepumpenmodell basiert auf physikalischen Simulationen und liefert Orientierungswerte. Die Ergebnisse ersetzen keine projektspezifische Auslegung. Für detaillierte Berechnungen sind entsprechende Herstellerdaten heranzuziehen.",
     "title_refrigerant_type": "Kältemitteltyp",
+    "refrigerant_types": {
+      "Natural": "Natürlich",
+      "Synthetic": "Synthetisch"
+    },
     "title_medium_sink": "Senkenmedium",
     "desc_medium_sink": "Medium auf der Senkenseite: Wasser oder Dampf.",
     "title_cop": "COP",
@@ -455,7 +460,7 @@
     "desc_opt_chart_red_3": " zeigt die verfügbare Wärmeleistung der Quellen auf den jeweiligen Temperaturniveaus.",
     "desc_opt_chart_aims_1": "Eine vollständige Lösung deckt den gesamten Senkenbedarf bis zu ihrer Vorlauftemperatur. Daher liegt ihr Senkenpunkt (blau) genau ",
     "desc_opt_chart_aims_2": "auf der durchgezogenen blauen Linie",
-    "desc_opt_chart_aims_3": ". In der Auslegung wird eine Wärmepumpe meist auf eine stabile Grundlast statt auf die Spitzenleistung ausgelegt; die wirtschaftliche Größe zeigt die Kostenanalyse.",
+    "desc_opt_chart_aims_3": ". In der Auslegung wird eine Wärmepumpe meist auf eine stabile Grundlast statt auf die Spitzenleistung ausgelegt; die wirtschaftliche Größe zeigt die Wirtschaftlichkeitsbetrachtung.",
     "desc_opt_chart_why": "Warum liegen einige Punkte abseits der blauen Linie?",
     "desc_opt_chart_off_1": "Punkte links der blauen Linie sind ",
     "desc_opt_chart_off_2": "quellenlimitiert",

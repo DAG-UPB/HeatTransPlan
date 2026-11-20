@@ -21,12 +21,15 @@ export default function Part({
   n,
   title,
   input,
+  sub,
   actions,
   children,
 }: {
   n: number;
   title: string;
   input: string;
+  /** A short line in small type right after the title. */
+  sub?: string;
   actions?: ReactNode;
   children: ReactNode;
 }) {
@@ -34,7 +37,10 @@ export default function Part({
     <details open className="pa-part">
       <summary className="pa-part-banner">
         <span className="pa-part-num">{n}</span>
-        <h2>{title}</h2>
+        <h2>
+          {title}
+          {sub && <small className="pa-part-sub"> {sub}</small>}
+        </h2>
         <span className="pa-part-input">{input}</span>
         {actions}
       </summary>

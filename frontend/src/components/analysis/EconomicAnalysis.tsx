@@ -304,7 +304,12 @@ export default function EconomicAnalysis() {
   }, [defaults]);
   if (!defaults)
     return (
-      <Part n={4} title={t('analysis.parts.costs')} input={t('analysis.parts.costs_in')}>
+      <Part
+        n={4}
+        title={t('analysis.parts.costs')}
+        sub={t('analysis.parts.costs_sub')}
+        input={t('analysis.parts.costs_in')}
+      >
         <p className="econ-note">
           {failed ? t('economics.defaults_failed') : <span className="spinner" />}
         </p>
@@ -387,6 +392,7 @@ function EconomicAnalysisInputs({ defaults }: { defaults: EconDefaults }) {
       <Part
         n={4}
         title={t('analysis.parts.costs')}
+        sub={t('analysis.parts.costs_sub')}
         input={t('analysis.parts.costs_in')}
         actions={header}
       >
@@ -624,6 +630,7 @@ function EconomicAnalysisInputs({ defaults }: { defaults: EconDefaults }) {
     <Part
       n={4}
       title={t('analysis.parts.costs')}
+      sub={t('analysis.parts.costs_sub')}
       input={t('analysis.parts.costs_in')}
       actions={header}
     >
