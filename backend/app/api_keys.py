@@ -43,7 +43,7 @@ _SIG = 32  # characters of the signature kept
 # Reachable without a key: what the page needs before it has one, the AI's
 # and the one-time download links (opened in the browser; the token is the
 # secret). The API reference (/api/docs, /api/openapi.json) needs a key too.
-OPEN_PATHS = {"/api/health", "/api/features", "/api/keys", "/api/keys/page"}
+OPEN_PATHS = {"/api/health", "/api/features", "/api/keys", "/api/keys/page", "/api/usage/me"}
 OPEN_PREFIXES = ("/api/mcp/files/",)
 # Where the client's id is left for the rate limit.
 CLIENT = "heattransplan.client"

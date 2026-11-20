@@ -2,6 +2,7 @@
  *  a click switches to the other one. Both have hand-written translations
  *  (src/locales), switched through i18next. */
 import { useTranslation } from 'react-i18next';
+import { track } from '../../api/usage';
 import './LanguagePicker.css';
 
 const NAMES: Record<string, string> = { en: 'English', de: 'Deutsch' };
@@ -13,6 +14,7 @@ export default function LanguagePicker() {
 
   const toggle = () => {
     i18n.changeLanguage(next);
+    track('ui:language');
     localStorage.setItem('i18nextLng', next);
   };
 
