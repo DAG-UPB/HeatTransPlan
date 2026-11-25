@@ -1,0 +1,15 @@
+[project]
+name = "heattransplan-process-models"
+version = "0.1.0"
+description = "Energy demand models of industrial thermal processes for HeatTransPlan"
+license = {text = "GPL-3.0-only"}
+requires-python = ">=3.11"
+dependencies = []
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+# Only the .py files are packaged; notebooks, P&IDs and literature stay in the repo.
+[tool.setuptools.packages.find]
+include = ["process_models*"]
