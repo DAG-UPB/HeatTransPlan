@@ -22,9 +22,15 @@ process_models/<process>/
 Every folder with a `model.py` that defines `MODEL` shows up in `process_models.PROCESSES`. Only the `.py` files
 are packaged; notebooks, P&IDs and literature stay in the repository.
 
-## Setup and checks
+## Setup (Python 3.11 or newer)
+
+From the repository root:
 
 ```bash
-backend/.venv/bin/python -m pip install -e process_models
-cd process_models && ../backend/.venv/bin/python -m pytest process_models
+python3 -m venv .venv
+.venv/bin/pip install -e "process_models[notebook,dev]"     # Windows: .venv\Scripts\pip
 ```
+
+Then open a notebook and pick this `.venv` as the kernel. Tests: `cd process_models && ../.venv/bin/python -m pytest process_models`.
+
+With the app's backend venv instead: `backend/.venv/bin/python -m pip install -e "process_models[notebook,dev]"`.
