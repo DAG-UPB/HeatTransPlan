@@ -52,30 +52,20 @@ describe('economic model', () => {
     expect(buildEconomics(i18n.t, DEFAULTS, 'gas', N.none)).toBeNull();
   });
 
-  it('a theoretical pump: its archetype as a dashed line, the real machines as reference', () => {
-    // The fixture's default pump is theoretical; its curve here is just the
-    // pump itself, with the fixture's real machines as the reference.
+  it('one size line over every kind of pump, a diamond for a theoretical one', () => {
     const base = N.gas_none!;
-    const n = {
-      ...base,
-      size: {
-        ...base.size,
-        theoretical: true,
-        sizes: [{ point: base.pump, npv: base.results[0].npv }],
-        reference: base.size.sizes,
-      },
-    } as EconNumbers;
-    const out = buildEconomics(i18n.t, DEFAULTS, 'gas', n)!;
-    const [curve, reference] = out.figures.size.data as unknown as Array<{
+    const out = buildEconomics(i18n.t, DEFAULTS, 'gas', base)!;
+    const [curve] = out.figures.size.data as unknown as Array<{
       name: string;
-      line: { dash?: string };
       x: number[];
+      marker: { symbol: string[] };
     }>;
-    expect(curve.name).toBe(`Theoretical (${n.size.sizes[0].point.refrigerant}): best per size`);
-    expect(curve.line.dash).toBe('dash');
-    expect(reference.name).toBe('Real heat pumps, best per size');
-    expect(reference.x).toEqual(n.size.reference.map((s) => s.point.Q_demand));
-    // Both lines can be clicked to analyse a pump.
-    expect(out.sizes).toHaveLength(n.size.sizes.length + n.size.reference.length);
+    expect(curve.name).toBe('Best heat pump per size (◆ theoretical)');
+    expect(curve.x).toEqual(base.size.sizes.map((s) => s.point.Q_demand));
+    expect(curve.marker.symbol).toEqual(
+      base.size.sizes.map((s) => (s.point.theoretical ? 'diamond' : 'circle'))
+    );
+    // Every point on the line can be clicked to analyse that pump.
+    expect(out.sizes).toHaveLength(base.size.sizes.length);
   });
 });
