@@ -47,6 +47,7 @@ test.json
 GEMINI.md
 graphify-out/
 .gemini/
+.claude/
 
 data/
 cop_analysis/
