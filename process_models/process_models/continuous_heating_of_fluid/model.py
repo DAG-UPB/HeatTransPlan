@@ -1,7 +1,9 @@
-"""Pasteurization (continuous heating of fluids): energy demand, manuscript Eq. (18) and (19).
+"""Continuous heating of fluid: energy demand, manuscript Eq. (18) and (19).
 
-Taken unchanged from energy_demand_models (2).ipynb, section 2; only pandas was replaced by plain lists,
-so the app can use it. pasteurization.ipynb checks that both give the same results.
+Fig. 1: Thermal activation of fluid products > Continuous heating of fluid. Examples: pasteurization,
+continuous sterilization (dairy products, beverages, fruit juice, UHT milk, ...).
+Taken from energy_demand_models (2).ipynb (written there for pasteurization); only pandas was replaced by
+plain lists and the names were made general. continuous_heating_of_fluid.ipynb checks both give the same results.
 """
 from __future__ import annotations
 
@@ -28,7 +30,7 @@ INPUTS = (
               example=3135.0, ref=_REF_IN),
     InputSpec("T_in", "Product inlet temperature", "degC", True, "T_in",
               example=4.0, ref=_REF_IN),
-    InputSpec("T_pasteur", "Pasteurization temperature", "degC", True, "T_pasteur",
+    InputSpec("T_process", "Process temperature (e.g. pasteurization, sterilization)", "degC", True, "T_pasteur",
               example=90.0, ref=_REF_IN),
     InputSpec("T_out", "Outlet temperature after cooling", "degC", True, "T_out",
               example=4.0, ref=_REF_IN),
@@ -39,7 +41,7 @@ INPUTS = (
     InputSpec("cp", "Specific heat capacity of product", "kJ/(kg K)", False, "cp,product",
               default=None, example=3.89, ref=_REF_IN,
               note="Required in the manuscript; here optional -> preset of the selected product."),
-    InputSpec("T_safety_margin", "Safety margin above pasteurization temperature", "K", False,
+    InputSpec("T_safety_margin", "Safety margin above process temperature", "K", False,
               "dT_margin", default=0.0, example=0.0, ref="Sect. 'Continuous heating of fluids' (1st paragraph)",
               note="Manuscript: temperature 'slightly exceeded', not quantified -> 0 K."),
     InputSpec("loss_area", "Heat-losing surface (pipes, holding tube, exchangers)", "m2", False,
@@ -60,9 +62,9 @@ def derive_defaults(values: dict) -> dict:
 
 
 @dataclass
-class PasteurizationResult:
+class ContinuousHeatingResult:
     inputs: dict
-    T_pasteur_eff: float           # pasteurization temperature incl. safety margin [degC]
+    T_process_eff: float           # process temperature incl. safety margin [degC]
     # Eq. (18)
     Q_sensible_heating: float
     Q_loss_heating: float
@@ -76,10 +78,10 @@ class PasteurizationResult:
 
     def summary(self) -> list[dict]:
         rows = [
-            ("Heating demand, sensible", "m*cp*(T_pasteur - T_in)", self.Q_sensible_heating, "kW", "Eq. (18), 1st term"),
+            ("Heating demand, sensible", "m*cp*(T_process - T_in)", self.Q_sensible_heating, "kW", "Eq. (18), 1st term"),
             ("Heat losses during heating", "(1/t) sum A*U*(T_i - T_amb)", self.Q_loss_heating, "kW", "Eq. (18), 2nd term"),
             ("HEATING DEMAND", "Q_heating", self.Q_heating, "kW", "Eq. (18)"),
-            ("Cooling demand, sensible", "m*cp*(T_pasteur - T_out)", self.Q_sensible_cooling, "kW", "Eq. (19), 1st term"),
+            ("Cooling demand, sensible", "m*cp*(T_process - T_out)", self.Q_sensible_cooling, "kW", "Eq. (19), 1st term"),
             ("Heat losses during cooling", "(1/t) sum A*U*(T_i - T_amb)", self.Q_loss_cooling, "kW", "Eq. (19), 2nd term (subtracted)"),
             ("COOLING DEMAND", "Q_cooling", self.Q_cooling, "kW", "Eq. (19)"),
             ("Sum heating + cooling (gross)", "Q_heating + Q_cooling", self.Q_heating + self.Q_cooling, "kW", "= classes.py calculate_total_energy()[2]"),
@@ -90,7 +92,7 @@ class PasteurizationResult:
 
     def stream_table(self) -> list[dict]:
         """Stream data of the two product streams (hand-over to the pinch analysis of the overall system)."""
-        T_p, v = self.T_pasteur_eff, self.inputs
+        T_p, v = self.T_process_eff, self.inputs
         return [
             {"stream": "product heating", "type": "cold", "T_supply_degC": v["T_in"], "T_target_degC": T_p,
              "CP_kW_per_K": self.Q_heating / (T_p - v["T_in"]), "Q_kW": self.Q_heating},
@@ -99,11 +101,11 @@ class PasteurizationResult:
         ]
 
 
-def calculate(values: dict) -> PasteurizationResult:
-    """Energy demand of continuous pasteurization, manuscript Eq. (18) and (19).
+def calculate(values: dict) -> ContinuousHeatingResult:
+    """Energy demand of continuous heating of a fluid, manuscript Eq. (18) and (19) (T_pasteur there = T_process).
 
-    Q_heating = m*cp*(T_pasteur - T_in)  + (1/t) * sum_i A*U*(T_i - T_amb)          (18)
-    Q_cooling = m*cp*(T_pasteur - T_out) - (1/t) * sum_i A*U*(T_i - T_amb)          (19)
+    Q_heating = m*cp*(T_process - T_in)  + (1/t) * sum_i A*U*(T_i - T_amb)          (18)
+    Q_cooling = m*cp*(T_process - T_out) - (1/t) * sum_i A*U*(T_i - T_amb)          (19)
 
     Assumption (manuscript does not define T_i): the product temperature in the loss term is the
     mean temperature of the respective stage, i.e. the time average for a linear profile.
@@ -112,16 +114,16 @@ def calculate(values: dict) -> PasteurizationResult:
     v = values
     m = v["mass_flow_kg_h"] / 3600.0                     # kg/s
     cp = v["cp"]                                         # kJ/(kg K)
-    T_p = v["T_pasteur"] + v["T_safety_margin"]
+    T_p = v["T_process"] + v["T_safety_margin"]
     T_in, T_out = v["T_in"], v["T_out"]
     A, U, T_amb = v["loss_area"], v["U_value"], v["T_amb"]
 
     if m <= 0 or cp <= 0:
         raise ValueError("mass flow and cp must be > 0")
     if not T_in < T_p:
-        raise ValueError(f"T_in ({T_in}) must be below the pasteurization temperature ({T_p}).")
+        raise ValueError(f"T_in ({T_in}) must be below the process temperature ({T_p}).")
     if not T_out < T_p:
-        raise ValueError(f"T_out ({T_out}) must be below the pasteurization temperature ({T_p}).")
+        raise ValueError(f"T_out ({T_out}) must be below the process temperature ({T_p}).")
 
     CP_flow = m * cp                                     # kW/K  (kg/s * kJ/(kg K))
 
@@ -140,8 +142,8 @@ def calculate(values: dict) -> PasteurizationResult:
     if A > 0 and T_out < T_amb - 1e-9:
         warns.append("T_out is below ambient temperature: loss term in Eq. (19) becomes negative (heat gain).")
 
-    return PasteurizationResult(
-        inputs=dict(v), T_pasteur_eff=T_p,
+    return ContinuousHeatingResult(
+        inputs=dict(v), T_process_eff=T_p,
         Q_sensible_heating=Q_sens_h, Q_loss_heating=Q_loss_h, Q_heating=Q_heating,
         Q_sensible_cooling=Q_sens_c, Q_loss_cooling=Q_loss_c, Q_cooling=Q_cooling,
         CP_flow=CP_flow, warnings=warns,
@@ -149,8 +151,8 @@ def calculate(values: dict) -> PasteurizationResult:
 
 
 MODEL = ProcessModel(
-    key="pasteurization", name="Pasteurization", version=VERSION,
-    process_type="Thermal activation of fluid products", category="Continuous heating of fluids",
+    key="continuous_heating_of_fluid", name="Continuous heating of fluid", version=VERSION,
+    process_type="Thermal activation of fluid products", category="Continuous heating of fluid",
     manuscript_refs="Eq. (18), (19), Fig. 7",
     inputs=INPUTS, run=calculate, derive_defaults=derive_defaults,
 )
