@@ -12,7 +12,7 @@ underlying dataset are reproduced.
 
 Run it on the machine that has the modelling data:
 
-    python cop_analysis/export_cop_ranges.py
+    python models/cop/cop_analysis/export_cop_ranges.py
 
 then commit the regenerated models/cop/cop_ranges.json.
 """
@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pandas as pd
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 DEFAULT_DATA = REPO_ROOT / "data" / "cop_modelling" / "df_to_model.parquet"
 DEFAULT_OUT = REPO_ROOT / "models" / "cop" / "cop_ranges.json"

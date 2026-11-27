@@ -25,7 +25,7 @@ env/
 # validations. Stays local, never committed. The deployment needs only the
 # trained model and its validity ranges:
 #   models/cop/best_model.joblib
-#   models/cop/cop_ranges.json   (regenerate: cop_analysis/export_cop_ranges.py)
+#   models/cop/cop_ranges.json   (regenerate: models/cop/cop_analysis/export_cop_ranges.py)
 data/
 cop_modelling_V0/
 cop_modelling/
@@ -35,8 +35,8 @@ cop_modelling/
 # Ignore the analysis workspace, but keep the range exporter the backend depends on.
 # (Must exclude the contents, not the directory — git will not descend into an
 # ignored directory, so a negation inside it would never be reached.)
-cop_analysis/*
-!cop_analysis/export_cop_ranges.py
+models/cop/cop_analysis/*
+!models/cop/cop_analysis/export_cop_ranges.py
 pinch-tool-main/
 test_company/
 scratch/
@@ -50,7 +50,6 @@ graphify-out/
 .claude/
 
 data/
-cop_analysis/
 
 # Built by CI and the docs container
 docs/_build/

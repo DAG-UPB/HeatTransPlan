@@ -10,3 +10,6 @@ data/economic_calculation
 data/examples_validation
 graphify-out
 scratch
+
+# COP analysis scripts are not needed in the image
+models/cop/cop_analysis/

@@ -35,7 +35,7 @@ def _load_model_and_data():
     if not os.path.exists(ranges_path):
         raise FileNotFoundError(
             f"COP ranges file not found at {ranges_path}. "
-            "Regenerate it with cop_analysis/export_cop_ranges.py and commit it."
+            "Regenerate it with models/cop/cop_analysis/export_cop_ranges.py and commit it."
         )
 
     with open(ranges_path, encoding="utf-8") as fh:
@@ -56,7 +56,7 @@ def _load_model_and_data():
         if missing := [key for key in required if key not in entry]:
             raise ValueError(
                 f"Entry {entry.get('name', '?')} in {ranges_path} is missing: {missing}. "
-                "Regenerate the file with cop_analysis/export_cop_ranges.py."
+                "Regenerate the file with models/cop/cop_analysis/export_cop_ranges.py."
             )
         alt = {key: entry[key] for key in required}
         for key in ("T_src_min", "T_src_max", "T_sink_min", "T_sink_max", "cop_min", "cop_max"):
@@ -99,7 +99,7 @@ def _model_4t():
         if not os.path.exists(path):
             raise FileNotFoundError(
                 f"4-temperature model not found at {path}. "
-                "Create it with cop_analysis/train_cop_4t.py."
+                "Create it with models/cop/cop_analysis/train_cop_4t.py."
             )
         _model_4t_cache = joblib.load(path)
     return _model_4t_cache

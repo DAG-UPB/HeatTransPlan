@@ -25,7 +25,7 @@ from app.models.cop_training import (
 )
 from app.services.cop_training.data import MAX_ROWS, MIN_ROWS, DataError, _numeric
 
-# The shipped models' set-up (cop_analysis/train_cop_4t.py): the same data
+# The shipped models' set-up (models/cop/cop_analysis/train_cop_4t.py): the same data
 # gives the same network, so a user can reproduce them.
 HIDDEN = (128, 64)
 TEST_SHARE = 0.2

@@ -38,7 +38,7 @@ The grid search varies only source return and sink supply. For the 4-temperature
 
 $$T_{Vorlauf,Quelle} = T_{pinch} - \frac{\Delta T_{min}}{2} \qquad T_{R\ddot{u}cklauf,Senke} = T_{pinch} + \frac{\Delta T_{min}}{2}$$
 
-The 2-temperature model cannot see how far the source is cooled down or how much the sink is heated up, which is where most of its error comes from. It stays selectable on the page for comparison. Training: `cop_analysis/train_cop_4t.py`; the models are `models/cop/best_model_4t.joblib` and `models/cop/best_model.joblib`.
+The 2-temperature model cannot see how far the source is cooled down or how much the sink is heated up, which is where most of its error comes from. It stays selectable on the page for comparison. Training: `models/cop/cop_analysis/train_cop_4t.py`; the models are `models/cop/best_model_4t.joblib` and `models/cop/best_model.joblib`.
 
 <details>
 <summary><b>Source code:</b> <code>backend/app/services/optimization/alternatives.py</code> (<code>_four_temperature_alternatives</code>)</summary>
@@ -68,7 +68,7 @@ Rows with gaps, text in a number column or a COP of 1 or less are left out. At m
 
 **Training.** All three are fitted on 80 % of the rows; the remaining 20 % give the metrics shown ($R^2$, MAE, RMSE, mean error in %) and a predicted-vs-actual chart.
 
-- **Neural network** — set up exactly as the shipped models (scikit-learn `MLPRegressor`, hidden layers 128 and 64, standardised temperatures in the shipped order, one-hot categories, early stopping, same split): the same data trains the same network as `cop_analysis/train_cop_4t.py`. Most accurate, no formula.
+- **Neural network** — set up exactly as the shipped models (scikit-learn `MLPRegressor`, hidden layers 128 and 64, standardised temperatures in the shipped order, one-hot categories, early stopping, same split): the same data trains the same network as `models/cop/cop_analysis/train_cop_4t.py`. Most accurate, no formula.
 - **Polynomial regression** — least squares on the temperatures in °C and their products up to degree 2 or 3; each medium, refrigerant and compressor value adds a constant offset. The formula is shown.
 - **Linear regression** — the same with degree 1.
 

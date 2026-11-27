@@ -35,7 +35,7 @@ RUN cd backend && uv pip install --system -e . -e ../mcp_server --no-cache-dir
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 # Runtime assets the backend loads: the COP model and its training data.
-# cop_analysis/ is notebooks only and is deliberately not copied.
+# models/cop/cop_analysis/ is analysis only and is kept out by .dockerignore.
 COPY data/ ./backend/data/
 COPY models/ ./backend/models/
 
