@@ -38,3 +38,5 @@ def test_invalid_inputs():
         run_process(KEY, **{**SPRAY, "w2": 0.6})            # final moisture above initial
     with pytest.raises(ValueError):
         run_process(KEY, **{**SPRAY, "air_flow_kg_h": 5000})  # far too little air: supersaturated outlet
+    with pytest.raises(ValueError, match="finite"):
+        run_process(KEY, **{**SPRAY, "air_flow_kg_h": float("nan")})  # NaN must not slip through the checks

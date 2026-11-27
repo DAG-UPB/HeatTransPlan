@@ -119,6 +119,8 @@ def calculate(values: dict) -> ConductiveDryingResult:
         raise ValueError(f"x1 ({x1 * 1000:.2f} g/kg) must be >= 0 and below saturation at T1.")
     if T3 > T2:
         raise ValueError(f"T_return ({T3}) must not be above the air outlet temperature T2 ({T2}).")
+    if v["dT_latent"] <= 0:
+        raise ValueError("dT_latent must be > 0")
 
     # Eq. (10)
     Q_sens = m_p * v["cp_wet"] * (v["T_surface"] - v["T_product_in"])

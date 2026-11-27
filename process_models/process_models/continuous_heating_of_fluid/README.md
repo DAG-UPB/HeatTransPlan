@@ -13,7 +13,7 @@ and cooled to `T_out`. That gives one cold stream (heating) and one hot stream (
 |---|---|
 | `model.py` | the model the app runs |
 | `continuous_heating_of_fluid.ipynb` | example, figures, P&ID, validation, comparison with the original notebook |
-| `energy_demand_models (2).ipynb` | original notebook (written for pasteurization), unchanged; `model.py` gives the same results (5000 random cases) |
+| `energy_demand_models_notebook_1.ipynb` | original notebook (written for pasteurization), unchanged; `model.py` gives the same results (5000 random cases), except that it rejects a negative heating demand |
 | `pid.svg` | simplified P&ID of the example, written by the notebook |
 | `test_model.py` | manuscript example: 3135 kg/h, 4 → 90 → 4 °C, cp 3.89 kJ/(kg K) gives 291.3 kW |
 

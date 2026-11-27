@@ -1,9 +1,10 @@
 """Shared framework for all process models: input description, model entry, input resolution.
 
-Taken from energy_demand_models (2).ipynb, section 1. Plain Python (no pandas), so the app can use it as is.
+Taken from energy_demand_models_notebook_1.ipynb, section 1. Plain Python (no pandas), so the app can use it as is.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Callable, Optional
 
@@ -57,6 +58,8 @@ def resolve_inputs(model: ProcessModel, user_values: dict):
         else:
             if s.kind == "float":
                 v = float(v)
+                if not math.isfinite(v):     # NaN would slip through every <, <= check of the models
+                    raise ValueError(f"'{s.key}' must be a finite number, got {v!r}")
             elif s.kind == "choice" and v not in s.choices:
                 raise ValueError(f"'{s.key}' must be one of {list(s.choices)}, got {v!r}")
             values[s.key] = v

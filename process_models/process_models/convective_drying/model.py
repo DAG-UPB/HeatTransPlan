@@ -105,7 +105,7 @@ def calculate(values: dict) -> ConvectiveDryingResult:
         raise ValueError(f"T0 ({T0}) must be below the drying air temperature T1 ({T1}).")
     if x1 < 0 or UA < 0:
         raise ValueError("humidity and UA-value must be >= 0")
-    if x1 >= ha.x_sat(T0, p):
+    if x1 > ha.x_sat(T0, p):
         raise ValueError(f"x0 ({x1 * 1000:.2f} g/kg) is above saturation at T0 ({T0} degC).")
 
     # Eq. (3): heating at constant humidity x1 = x0

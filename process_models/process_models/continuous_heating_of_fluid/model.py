@@ -2,7 +2,7 @@
 
 Fig. 1: Thermal activation of fluid products > Continuous heating of fluid. Examples: pasteurization,
 continuous sterilization (dairy products, beverages, fruit juice, UHT milk, ...).
-Taken from energy_demand_models (2).ipynb (written there for pasteurization); only pandas was replaced by
+Taken from energy_demand_models_notebook_1.ipynb (written there for pasteurization); only pandas was replaced by
 plain lists and the names were made general. continuous_heating_of_fluid.ipynb checks both give the same results.
 """
 from __future__ import annotations
@@ -120,6 +120,8 @@ def calculate(values: dict) -> ContinuousHeatingResult:
 
     if m <= 0 or cp <= 0:
         raise ValueError("mass flow and cp must be > 0")
+    if A < 0 or U < 0 or v["T_safety_margin"] < 0:   # not in the original notebook
+        raise ValueError("loss_area, U_value and T_safety_margin must be >= 0")
     if not T_in < T_p:
         raise ValueError(f"T_in ({T_in}) must be below the process temperature ({T_p}).")
     if not T_out < T_p:
@@ -137,6 +139,8 @@ def calculate(values: dict) -> ContinuousHeatingResult:
     Q_cooling = Q_sens_c - Q_loss_c
 
     warns = []
+    if Q_heating <= 0:   # not in the original notebook: warm ambient + large losses would give a negative demand
+        raise ValueError("Heating demand <= 0: heat gains from the ambient exceed the sensible heating load.")
     if Q_cooling <= 0:
         raise ValueError("Cooling demand <= 0: heat losses exceed the sensible cooling load.")
     if A > 0 and T_out < T_amb - 1e-9:

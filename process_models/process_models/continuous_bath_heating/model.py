@@ -102,6 +102,8 @@ def calculate(values: dict) -> BathHeatingResult:
         raise ValueError("product mass flow and cp must be > 0")
     if min(v["A_surface"], v["A_wall"], v["U_bath"], v["alpha"]) < 0 or not 0 <= v["emissivity"] <= 1:
         raise ValueError("areas, U_bath and alpha must be >= 0, emissivity between 0 and 1")
+    if v["dT_latent"] <= 0:
+        raise ValueError("dT_latent must be > 0")
     if v["T_product_in"] > T_b:
         raise ValueError(f"T_product_in ({v['T_product_in']}) must not be above the bath temperature ({T_b}).")
 
@@ -113,6 +115,8 @@ def calculate(values: dict) -> BathHeatingResult:
     Q_conv = v["alpha"] * v["A_surface"] * (T_b - T_a) / 1000.0
     Q_rad = v["emissivity"] * SIGMA * v["A_surface"] * ((T_b + K) ** 4 - (T_a + K) ** 4) / 1000.0
     Q_heating = Q_prod + Q_trans + Q_conv + Q_rad
+    if Q_heating <= 0:
+        raise ValueError("Heating demand <= 0: the bath gains more heat from the ambient than the product takes.")
 
     warns, T_u_out = [], None
     m_u, T_u_in = v["utility_flow_kg_h"], v["T_utility_in"]

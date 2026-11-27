@@ -31,3 +31,5 @@ def test_invalid_temperatures():
         run_process(KEY, mass_flow_kg_h=1000, T_in=90, T_process=4, T_out=4)
     with pytest.raises(ValueError):
         run_process(KEY, mass_flow_kg_h=1000, T_in=4, T_out=4)  # T_process missing
+    with pytest.raises(ValueError, match="Heating demand <= 0"):  # warm ambient + large losses: negative heating
+        run_process(KEY, mass_flow_kg_h=827, T_in=-3, T_process=22.5, T_out=4.6, loss_area=290, U_value=23.7, T_amb=20)

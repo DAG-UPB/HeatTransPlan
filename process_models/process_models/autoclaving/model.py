@@ -111,7 +111,7 @@ class AutoclavingResult:
         T_s, dT = v["T_steri"], v["dT_latent"]
         rows = [{"stream": "batch heating", "type": "cold", "T_supply_degC": v["T_start"], "T_target_degC": T_s,
                  "CP_kW_per_K": Q_h / (T_s - v["T_start"]), "Q_kW": Q_h}]
-        if Q_hold > 0:
+        if Q_hold > 0 and v["t_holding_min"] > 0:
             rows.append({"stream": "holding", "type": "cold", "T_supply_degC": T_s, "T_target_degC": T_s + dT,
                          "CP_kW_per_K": Q_hold / dT, "Q_kW": Q_hold})
         rows.append({"stream": "batch cooling", "type": "hot", "T_supply_degC": T_s, "T_target_degC": v["T_final"],
@@ -141,6 +141,8 @@ def calculate(values: dict) -> AutoclavingResult:
         raise ValueError("specific heat capacities must be > 0")
     if t_h <= 0 or t_c <= 0 or t_hold < 0:
         raise ValueError("heating and cooling time must be > 0, holding time >= 0")
+    if v["loss_area"] < 0 or v["U_value"] < 0 or v["dT_latent"] <= 0:
+        raise ValueError("loss_area and U_value must be >= 0, dT_latent > 0")
     if not T_start < T_s:
         raise ValueError(f"T_start ({T_start}) must be below the sterilization temperature ({T_s}).")
     if not T_f < T_s:
@@ -155,6 +157,8 @@ def calculate(values: dict) -> AutoclavingResult:
     Q_sens_c = C * (T_s - T_f) / t_c
     Q_loss_c = AU * (0.5 * (T_s + T_f) - v["T_amb"])
     Q_cooling = Q_sens_c - Q_loss_c
+    if Q_sens_h + Q_loss_h <= 0:
+        raise ValueError("Heating demand <= 0: heat gains from the ambient exceed the sensible heating load.")
     if Q_cooling <= 0:
         raise ValueError("Cooling demand <= 0: heat losses exceed the sensible cooling load.")
 
