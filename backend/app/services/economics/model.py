@@ -138,11 +138,17 @@ def pick_pump(
     selected: Sequence[OptimizedIntegrationPoint], opt: Optional[HPIOptimizationResult]
 ) -> Optional[OptimizedIntegrationPoint]:
     """The one pump analysed, so the analysis stays readable however many are
-    picked: the best of the selection (real machines before archetypes, then
-    largest heat output, then highest COP). Nothing picked: the default pump, as
-    the optimization chart shows."""
+    picked: the one the optimization chart boxes (optimizationChartPoints.ts
+    boxPointsOf). A click appends every machine at that sink temperature to
+    the selection, so the last entry's temperature is the one just clicked;
+    of those, the largest heat output, then the highest COP. Taking the best
+    of the whole selection instead kept the analysis on an earlier, larger
+    pump however often another was clicked. Nothing picked: the default pump,
+    as the optimization chart shows."""
     if selected:
-        return sorted(selected, key=lambda p: (int(bool(p.theoretical)), -p.Q_demand, -p.COP))[0]
+        last = selected[-1].T_sink
+        at_temp = [p for p in selected if abs(p.T_sink - last) < 0.01]
+        return sorted(at_temp, key=lambda p: (-p.Q_demand, -p.COP))[0]
     return opt.max_q_point if opt else None
 
 
