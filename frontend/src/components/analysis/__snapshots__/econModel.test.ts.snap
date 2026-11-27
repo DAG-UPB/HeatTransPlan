@@ -1476,14 +1476,15 @@ exports[`economic model > German report data 1`] = `
      "mode": "lines+markers",
      "x": "[62 items 962a5b8c]",
      "y": "[62 items 16a7e7]",
-     "name": "Beste Wärmepumpe je Größe",
+     "name": "Beste Wärmepumpe je Größe (◆ theoretisch)",
      "line": {
       "color": "#9AA0A6",
       "width": 2
      },
      "marker": {
       "size": 7,
-      "color": "[62 items 4a99565f]"
+      "color": "[62 items 4a99565f]",
+      "symbol": "[62 items 7850b34f]"
      },
      "customdata": "[62 items 64fe6b7f]",
      "hovertemplate": "%{customdata}<br>Kapitalwert: %{y:,.0f} €<extra></extra>"
@@ -2982,14 +2983,15 @@ exports[`economic model > buildEconomics eboiler none 1`] = `
      "mode": "lines+markers",
      "x": "[62 items 962a5b8c]",
      "y": "[62 items 50062b8f]",
-     "name": "Best heat pump per size",
+     "name": "Best heat pump per size (◆ theoretical)",
      "line": {
       "color": "#9AA0A6",
       "width": 2
      },
      "marker": {
       "size": 7,
-      "color": "[62 items 46f6540f]"
+      "color": "[62 items 46f6540f]",
+      "symbol": "[62 items 7850b34f]"
      },
      "customdata": "[62 items 23b2db1f]",
      "hovertemplate": "%{customdata}<br>Net present value: %{y:,.0f} €<extra></extra>"
@@ -4481,14 +4483,15 @@ exports[`economic model > buildEconomics eboiler one 1`] = `
      "mode": "lines+markers",
      "x": "[62 items 962a5b8c]",
      "y": "[62 items 50062b8f]",
-     "name": "Best heat pump per size",
+     "name": "Best heat pump per size (◆ theoretical)",
      "line": {
       "color": "#9AA0A6",
       "width": 2
      },
      "marker": {
       "size": 7,
-      "color": "[62 items 46f6540f]"
+      "color": "[62 items 46f6540f]",
+      "symbol": "[62 items 7850b34f]"
      },
      "customdata": "[62 items 23b2db1f]",
      "hovertemplate": "%{customdata}<br>Net present value: %{y:,.0f} €<extra></extra>"
@@ -5980,14 +5983,15 @@ exports[`economic model > buildEconomics eboiler several 1`] = `
      "mode": "lines+markers",
      "x": "[62 items 962a5b8c]",
      "y": "[62 items 50062b8f]",
-     "name": "Best heat pump per size",
+     "name": "Best heat pump per size (◆ theoretical)",
      "line": {
       "color": "#9AA0A6",
       "width": 2
      },
      "marker": {
       "size": 7,
-      "color": "[62 items 46f6540f]"
+      "color": "[62 items 46f6540f]",
+      "symbol": "[62 items 7850b34f]"
      },
      "customdata": "[62 items 23b2db1f]",
      "hovertemplate": "%{customdata}<br>Net present value: %{y:,.0f} €<extra></extra>"
@@ -7479,14 +7483,15 @@ exports[`economic model > buildEconomics gas none 1`] = `
      "mode": "lines+markers",
      "x": "[62 items 962a5b8c]",
      "y": "[62 items 16a7e7]",
-     "name": "Best heat pump per size",
+     "name": "Best heat pump per size (◆ theoretical)",
      "line": {
       "color": "#9AA0A6",
       "width": 2
      },
      "marker": {
       "size": 7,
-      "color": "[62 items 4a99565f]"
+      "color": "[62 items 4a99565f]",
+      "symbol": "[62 items 7850b34f]"
      },
      "customdata": "[62 items 2c59bd7f]",
      "hovertemplate": "%{customdata}<br>Net present value: %{y:,.0f} €<extra></extra>"
@@ -8978,14 +8983,15 @@ exports[`economic model > buildEconomics gas one 1`] = `
      "mode": "lines+markers",
      "x": "[62 items 962a5b8c]",
      "y": "[62 items 16a7e7]",
-     "name": "Best heat pump per size",
+     "name": "Best heat pump per size (◆ theoretical)",
      "line": {
       "color": "#9AA0A6",
       "width": 2
      },
      "marker": {
       "size": 7,
-      "color": "[62 items 4a99565f]"
+      "color": "[62 items 4a99565f]",
+      "symbol": "[62 items 7850b34f]"
      },
      "customdata": "[62 items 2c59bd7f]",
      "hovertemplate": "%{customdata}<br>Net present value: %{y:,.0f} €<extra></extra>"
@@ -10477,14 +10483,15 @@ exports[`economic model > buildEconomics gas several 1`] = `
      "mode": "lines+markers",
      "x": "[62 items 962a5b8c]",
      "y": "[62 items 16a7e7]",
-     "name": "Best heat pump per size",
+     "name": "Best heat pump per size (◆ theoretical)",
      "line": {
       "color": "#9AA0A6",
       "width": 2
      },
      "marker": {
       "size": 7,
-      "color": "[62 items 4a99565f]"
+      "color": "[62 items 4a99565f]",
+      "symbol": "[62 items 7850b34f]"
      },
      "customdata": "[62 items 2c59bd7f]",
      "hovertemplate": "%{customdata}<br>Net present value: %{y:,.0f} €<extra></extra>"
@@ -11976,14 +11983,15 @@ exports[`economic model > buildEconomics oil none 1`] = `
      "mode": "lines+markers",
      "x": "[62 items 962a5b8c]",
      "y": "[62 items 16a7e7]",
-     "name": "Best heat pump per size",
+     "name": "Best heat pump per size (◆ theoretical)",
      "line": {
       "color": "#9AA0A6",
       "width": 2
      },
      "marker": {
       "size": 7,
-      "color": "[62 items 4a99565f]"
+      "color": "[62 items 4a99565f]",
+      "symbol": "[62 items 7850b34f]"
      },
      "customdata": "[62 items cd0843ff]",
      "hovertemplate": "%{customdata}<br>Net present value: %{y:,.0f} €<extra></extra>"
@@ -13475,14 +13483,15 @@ exports[`economic model > buildEconomics oil one 1`] = `
      "mode": "lines+markers",
      "x": "[62 items 962a5b8c]",
      "y": "[62 items 16a7e7]",
-     "name": "Best heat pump per size",
+     "name": "Best heat pump per size (◆ theoretical)",
      "line": {
       "color": "#9AA0A6",
       "width": 2
      },
      "marker": {
       "size": 7,
-      "color": "[62 items 4a99565f]"
+      "color": "[62 items 4a99565f]",
+      "symbol": "[62 items 7850b34f]"
      },
      "customdata": "[62 items cd0843ff]",
      "hovertemplate": "%{customdata}<br>Net present value: %{y:,.0f} €<extra></extra>"
@@ -14974,14 +14983,15 @@ exports[`economic model > buildEconomics oil several 1`] = `
      "mode": "lines+markers",
      "x": "[62 items 962a5b8c]",
      "y": "[62 items 16a7e7]",
-     "name": "Best heat pump per size",
+     "name": "Best heat pump per size (◆ theoretical)",
      "line": {
       "color": "#9AA0A6",
       "width": 2
      },
      "marker": {
       "size": 7,
-      "color": "[62 items 4a99565f]"
+      "color": "[62 items 4a99565f]",
+      "symbol": "[62 items 7850b34f]"
      },
      "customdata": "[62 items cd0843ff]",
      "hovertemplate": "%{customdata}<br>Net present value: %{y:,.0f} €<extra></extra>"
@@ -16433,14 +16443,15 @@ exports[`economic model > changed inputs 1`] = `
      "mode": "lines+markers",
      "x": "[62 items 962a5b8c]",
      "y": "[62 items d883166d]",
-     "name": "Best heat pump per size",
+     "name": "Best heat pump per size (◆ theoretical)",
      "line": {
       "color": "#9AA0A6",
       "width": 2
      },
      "marker": {
       "size": 7,
-      "color": "[62 items 9f40c38f]"
+      "color": "[62 items 9f40c38f]",
+      "symbol": "[62 items 7850b34f]"
      },
      "customdata": "[62 items cd0843ff]",
      "hovertemplate": "%{customdata}<br>Net present value: %{y:,.0f} €<extra></extra>"
@@ -17852,14 +17863,15 @@ exports[`economic model > dark theme and a fixed sensitivity window 1`] = `
      "mode": "lines+markers",
      "x": "[62 items 962a5b8c]",
      "y": "[62 items 16a7e7]",
-     "name": "Best heat pump per size",
+     "name": "Best heat pump per size (◆ theoretical)",
      "line": {
       "color": "#94A3B8",
       "width": 2
      },
      "marker": {
       "size": 7,
-      "color": "[62 items 4a99565f]"
+      "color": "[62 items 4a99565f]",
+      "symbol": "[62 items 7850b34f]"
      },
      "customdata": "[62 items 2c59bd7f]",
      "hovertemplate": "%{customdata}<br>Net present value: %{y:,.0f} €<extra></extra>"
@@ -19461,14 +19473,15 @@ exports[`economic model > report data, core and pump choice 1`] = `
      "mode": "lines+markers",
      "x": "[62 items 962a5b8c]",
      "y": "[62 items 50062b8f]",
-     "name": "Best heat pump per size",
+     "name": "Best heat pump per size (◆ theoretical)",
      "line": {
       "color": "#9AA0A6",
       "width": 2
      },
      "marker": {
       "size": 7,
-      "color": "[62 items 46f6540f]"
+      "color": "[62 items 46f6540f]",
+      "symbol": "[62 items 7850b34f]"
      },
      "customdata": "[62 items 23b2db1f]",
      "hovertemplate": "%{customdata}<br>Net present value: %{y:,.0f} €<extra></extra>"

@@ -88,10 +88,6 @@ export interface EconNumbers {
   size: {
     sizes: EconSize[];
     optimum: EconSize | null;
-    /** The analysed pump is theoretical: sizes are its archetype's, and
-     *  reference holds the real machines' best per size. */
-    theoretical: boolean;
-    reference: EconSize[];
   };
   npv: { runs: number[][]; crossings: Array<number | null>; kMax: number };
 }

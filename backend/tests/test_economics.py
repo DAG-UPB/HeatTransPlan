@@ -268,9 +268,9 @@ def test_the_size_curve_keeps_to_the_profiles():
     pump = out["core"]["pump"]
     sizes = [s for s in out["size"]["sizes"] if s["p"] is not pump]
     assert sizes and not any(s["p"].source_limited or s["p"].demand_limited for s in sizes)
-    assert not out["size"]["theoretical"] and out["size"]["reference"] == []
-    # Every on-profile pump's size is there, each with its best net present value.
-    on = [p for p in OPT.feasible_points if not p.theoretical and p.COP > 0
+    # Every on-profile pump's size is there, real or theoretical, each with
+    # its best net present value.
+    on = [p for p in OPT.feasible_points if p.COP > 0
           and not p.source_limited and not p.demand_limited]
     assert {round(100 * p.Q_demand / out["core"]["refSys"].Q + 1e-9) for p in on} == {
         round(100 * s["p"].Q_demand / out["core"]["refSys"].Q + 1e-9) for s in sizes}
@@ -282,23 +282,26 @@ def _on_line(out):
     return len(hits) == 1 and hits[0]["npv"] == pytest.approx(npv)
 
 
-def test_a_theoretical_pump_is_sized_against_its_own_archetype():
-    # Nothing picked: the default pump is the largest, a theoretical one. Its
-    # curve runs over its archetype's points, and it sits on that curve; the
-    # real machines stay as the reference line.
+def test_one_size_line_over_every_kind_of_pump():
+    # A theoretical pump is no longer sized against its own archetype alone:
+    # one with few on-profile points (Prototypical Stirling only works at
+    # high sink temperatures) left a single point on the chart. The line runs
+    # over every kind, the best per size, whatever the analysed pump is.
     case = next(c for c in REF["cases"] if not c["selected"])
     out = economics(case["form"], case["refType"], [], OPT, None)
-    pump = out["core"]["pump"]
-    assert pump.theoretical
+    assert out["core"]["pump"].theoretical and _on_line(out)
     size = out["size"]
-    assert size["theoretical"]
-    assert all(s["p"].theoretical and s["p"].refrigerant == pump.refrigerant for s in size["sizes"])
-    assert _on_line(out)
+    assert "theoretical" not in size and "reference" not in size
+    assert {s["p"].theoretical for s in size["sizes"]} == {True, False}
     assert size["optimum"] in size["sizes"]
-    ref = size["reference"]
-    assert ref and all(not s["p"].theoretical and not s["p"].source_limited and not s["p"].demand_limited for s in ref)
     q = out["core"]["refSys"].Q
-    assert len({round(100 * s["p"].Q_demand / q + 1e-9) for s in ref}) == len(ref)  # one per size
+    assert len({round(100 * s["p"].Q_demand / q + 1e-9) for s in size["sizes"]}) == len(size["sizes"])
+    # The same line when a real machine is analysed instead (plus that pump,
+    # should it not be the best of its size).
+    real = next(p for p in OPT.feasible_points if not p.theoretical and p.COP > 0)
+    key = lambda o: {(s["p"].Q_demand, s["p"].COP, s["p"].refrigerant) for s in o["size"]["sizes"]}
+    other = economics(case["form"], case["refType"], [real], OPT, None)
+    assert key(out) - {(out["core"]["pump"].Q_demand, out["core"]["pump"].COP, out["core"]["pump"].refrigerant)} <= key(other)
 
 
 def test_the_analysed_pump_is_always_on_its_line():

@@ -161,12 +161,9 @@ def econ_core(
     # The reference supplies the largest demand (and cools the largest source)
     # among the variants, so every pump is compared against the same Ist-Situation.
     real_feasible = [p for p in (opt.feasible_points if opt else []) if not p.theoretical and p.COP > 0]
-    # A theoretical pump (an archetype such as Carnot) is sized against its own
-    # kind: the size curve then runs over that archetype's points.
-    archetype_feasible = [
-        p for p in (opt.feasible_points if opt else [])
-        if pump.theoretical and p.theoretical and p.refrigerant == pump.refrigerant and p.COP > 0
-    ]
+    # Every working pump the optimization found, real machines and archetypes
+    # (Carnot, ...) alike: the size curve runs over all of them.
+    all_feasible = [p for p in (opt.feasible_points if opt else []) if p.COP > 0]
     ref_pool = [*points, *([opt.max_q_point] if opt and opt.max_q_point else []), *real_feasible]
     ref_sys = EconReference(
         Q=max(p.Q_demand_total if p.Q_demand_total is not None else p.Q_demand for p in ref_pool),
@@ -188,8 +185,7 @@ def econ_core(
         "pump": pump,
         "points": points,
         "inp": inp,
-        "realFeasible": real_feasible,
-        "archetypeFeasible": archetype_feasible,
+        "allFeasible": all_feasible,
         "refSys": ref_sys,
         "ref": ref,
         "specTotal": spec_total,
@@ -251,27 +247,25 @@ def _best_per_size(core: Dict[str, Any], pool: Sequence[OptimizedIntegrationPoin
 
 
 def size_curve(core: Dict[str, Any]) -> Dict[str, Any]:
-    """Economic heat pump size: every working pump of the analysed pump's kind,
-    costed with the same inputs. Per size (1 % of the demand) the best machine
-    is kept, so the line is the best you can do at each size and its peak is
-    the economic optimum.
+    """Economic heat pump size: every working pump from the optimization, real
+    machines and archetypes alike, costed with the same inputs. Per size (1 %
+    of the demand) the best one is kept, whatever its kind, so the line is the
+    best you can do at each size and its peak is the economic optimum.
 
-    The kind: real machines for a real pump; for a theoretical one (an
-    archetype such as Carnot) that archetype's points, with the real machines
-    as a reference line. The analysed pump is always on its line, even when it
-    is not the best of its size or lies off the profiles, so the chart shows
-    where it stands among the sizes."""
+    Only the analysed pump's own kind made a project whose real machines do
+    not fit (an archetype valid only at high sink temperatures, say) show a
+    single point. The analysed pump is always on the line, even when it is not
+    the best of its size or lies off the profiles, so the chart shows where it
+    stands among the sizes."""
     pump = core["pump"]
-    theoretical = bool(pump.theoretical)
-    sizes = _best_per_size(core, core["archetypeFeasible"] if theoretical else core["realFeasible"])
+    sizes = _best_per_size(core, core["allFeasible"])
     if not any(_same(s["p"], pump) for s in sizes):
         sizes = sorted([*sizes, {"p": pump, "npv": core["results"][0]["npv"]}], key=lambda s: s["p"].Q_demand)
     optimum = None
     for s in sizes:
         if optimum is None or s["npv"] > optimum["npv"]:
             optimum = s
-    reference = _best_per_size(core, core["realFeasible"]) if theoretical else []
-    return {"sizes": sizes, "optimum": optimum, "theoretical": theoretical, "reference": reference}
+    return {"sizes": sizes, "optimum": optimum}
 
 
 def _same(a: OptimizedIntegrationPoint, b: OptimizedIntegrationPoint) -> bool:
