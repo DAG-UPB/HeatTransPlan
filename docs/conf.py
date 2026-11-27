@@ -37,7 +37,7 @@ source_suffix = {
 html_theme = "sphinx_book_theme"
 html_title = "HeatTransPlan — Calculation Logic"
 html_theme_options = {
-    "repository_url": "https://github.com/drzg15/HeatTransPlan",
+    "repository_url": "https://github.com/DAG-UPB/HeatTransPlan",
     "use_repository_button": True,
     "show_toc_level": 2,
     "navigation_with_keys": True,

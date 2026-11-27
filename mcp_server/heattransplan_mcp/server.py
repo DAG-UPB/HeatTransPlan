@@ -195,7 +195,7 @@ async def _edit(project_id: str, label: str, change, focus=None) -> Dict[str, An
 
 # The app's own documentation, read where the repository has it.
 DOCS = Path(os.getenv("HEATTRANSPLAN_DOCS") or Path(__file__).resolve().parents[2] / "docs")
-DOCS_URL = "https://raw.githubusercontent.com/drzg15/HeatTransPlan/main/docs"
+DOCS_URL = "https://raw.githubusercontent.com/DAG-UPB/HeatTransPlan/main/docs"
 
 
 @tool
