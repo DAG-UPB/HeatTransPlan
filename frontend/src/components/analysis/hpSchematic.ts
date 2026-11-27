@@ -32,6 +32,9 @@ export function heatPumpSchematic(
   const srcY = boxPoint.T_source;
   const snkX = boxPoint.Q_demand;
   const snkY = boxPoint.T_sink;
+  // From the point itself: srcX is mirrored negative without heat recovery,
+  // so snkX - srcX would add the source heat instead of subtracting it.
+  const pEl = boxPoint.Q_demand / boxPoint.COP;
 
   // The box sits on the sink's x, halfway up the lift: the route is then a
   // clean rise-then-across, with no diagonal anywhere.
@@ -93,7 +96,7 @@ export function heatPumpSchematic(
       t('optimization.hp_box_what'),
       '',
       `<b>${Math.abs(srcX).toFixed(1)} kW · ${srcY.toFixed(1)} °C</b> — ${t('optimization.hp_box_source')}`,
-      `<b>P<sub>el</sub> ${(snkX - srcX).toFixed(1)} kW</b> — ${t('optimization.hp_box_el')}`,
+      `<b>P<sub>el</sub> ${pEl.toFixed(1)} kW</b> — ${t('optimization.hp_box_el')}`,
       `<b>${snkX.toFixed(1)} kW · ${snkY.toFixed(1)} °C</b> — ${t('optimization.hp_box_sink')}`,
       `<b>COP ${boxPoint.COP.toFixed(2)}</b> — ${t('optimization.hp_box_cop')}`,
       '',
@@ -205,7 +208,7 @@ export function heatPumpSchematic(
     arrowwidth: 2,
     arrowcolor: EL_SOFT,
     standoff: halfW + 2,
-    text: `<b>P<sub>el</sub> ${(snkX - srcX).toFixed(1)} kW</b>`,
+    text: `<b>P<sub>el</sub> ${pEl.toFixed(1)} kW</b>`,
     xanchor: 'left',
     font: { size: 10, color: EL_SOFT },
   });
