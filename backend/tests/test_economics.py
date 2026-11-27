@@ -37,11 +37,24 @@ def close(a, b, path="") -> None:
         assert a == b, f"{path}: {a!r} != {b!r}"
 
 
+def _clicked_last(points):
+    """The reference cases' selection, in the order a user would have clicked
+    to analyse the pump the TypeScript did: its sink temperature last. The
+    TypeScript took the best of the whole selection (real before theoretical,
+    then heat output); the analysed pump is now the one clicked last."""
+    points = list(points)
+    if not points:
+        return points
+    old = sorted(points, key=lambda p: (int(bool(p.theoretical)), -p.Q_demand, -p.COP))[0]
+    at = lambda p: abs(p.T_sink - old.T_sink) < 0.01
+    return [p for p in points if not at(p)] + [p for p in points if at(p)]
+
+
 @pytest.mark.parametrize("n", range(len(REF["cases"])))
 def test_matches_the_typescript(n):
     case = REF["cases"][n]
     exp = case["expect"]
-    selected = [OptimizedIntegrationPoint(**p) for p in case["selected"]]
+    selected = _clicked_last(OptimizedIntegrationPoint(**p) for p in case["selected"])
     out = economics(case["form"], case["refType"], selected, OPT, case["sensBase"])
     core = out["core"]
 
@@ -314,3 +327,16 @@ def test_the_analysed_pump_is_always_on_its_line():
         out = economics(case["form"], case["refType"], [p], OPT, None)
         assert _on_line(out), (p.Q_demand, p.COP)
         assert out["size"]["optimum"]["npv"] >= out["core"]["results"][0]["npv"] - 1e-6
+
+def test_the_pump_clicked_last_is_analysed():
+    # Clicking a point appends every machine at that sink temperature; the
+    # analysis follows the last click, not the largest pump of the selection.
+    case = _real_case()
+    pumps = [p for p in OPT.feasible_points if p.COP > 0 and not p.source_limited and not p.demand_limited]
+    big = max(pumps, key=lambda p: p.Q_demand)
+    small = min((p for p in pumps if abs(p.T_sink - big.T_sink) >= 0.01), key=lambda p: p.Q_demand)
+    group = lambda t: [p for p in OPT.feasible_points if abs(p.T_sink - t) < 0.01]
+    best = lambda t: max(group(t), key=lambda p: (p.Q_demand, p.COP))
+    for first, then in ((big, small), (small, big)):
+        out = economics(case["form"], case["refType"], group(first.T_sink) + group(then.T_sink), OPT, None)
+        assert out["core"]["pump"] == best(then.T_sink)
